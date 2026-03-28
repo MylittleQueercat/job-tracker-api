@@ -1,4 +1,4 @@
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, field_validator, ConfigDict
 from typing import Optional
 from datetime import datetime, date as date_type
 
@@ -12,6 +12,7 @@ class InterviewCreate(BaseModel):
     notes: Optional[str] = None
 
 class InterviewResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
     id: int
     job_id: int
     round: int
@@ -19,9 +20,6 @@ class InterviewResponse(BaseModel):
     date: Optional[date_type]
     notes: Optional[str]
     created_at: datetime
-
-    class Config:
-        from_attributes = True
 
 class JobCreate(BaseModel):
     company: str
@@ -58,6 +56,7 @@ class JobUpdate(BaseModel):
         return v
 
 class JobResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
     id: int
     company: str
     position: str
