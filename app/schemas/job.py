@@ -1,14 +1,36 @@
 from pydantic import BaseModel, field_validator
 from typing import Optional
-from datetime import datetime
+from datetime import datetime, date as date_type
 
-VALID_STATUSES = {"applied", "interview", "offer", "rejected"}
+VALID_STATUSES = {"applied", "phone_screen", "technical_test", "interview", "final_interview", "offer", "rejected", "withdrawn", "ghosted"}
+VALID_JOB_TYPES = {"internship", "full-time", "contract"}
+
+class InterviewCreate(BaseModel):
+    round: int
+    interview_type: Optional[str] = None
+    date: Optional[date_type] = None
+    notes: Optional[str] = None
+
+class InterviewResponse(BaseModel):
+    id: int
+    job_id: int
+    round: int
+    interview_type: Optional[str]
+    date: Optional[date_type]
+    notes: Optional[str]
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
 
 class JobCreate(BaseModel):
     company: str
     position: str
     status: str = "applied"
-    url: Optional[str] = None
+    location: Optional[str] = None
+    job_type: Optional[str] = None
+    source: Optional[str] = None
+    deadline: Optional[date_type] = None
     notes: Optional[str] = None
 
     @field_validator("status")
@@ -22,7 +44,10 @@ class JobUpdate(BaseModel):
     company: Optional[str] = None
     position: Optional[str] = None
     status: Optional[str] = None
-    url: Optional[str] = None
+    location: Optional[str] = None
+    job_type: Optional[str] = None
+    source: Optional[str] = None
+    deadline: Optional[date_type] = None
     notes: Optional[str] = None
 
     @field_validator("status")
@@ -37,10 +62,13 @@ class JobResponse(BaseModel):
     company: str
     position: str
     status: str
-    url: Optional[str]
+    location: Optional[str]
+    job_type: Optional[str]
+    source: Optional[str]
+    deadline: Optional[date_type]
     notes: Optional[str]
     created_at: datetime
-    updated_at: datetime
+    interviews: list[InterviewResponse] = []
 
     class Config:
         from_attributes = True
