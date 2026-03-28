@@ -68,6 +68,4 @@ class JobResponse(BaseModel):
     notes: Optional[str]
     created_at: datetime
     interviews: list[InterviewResponse] = []
-
-    class Config:
-        from_attributes = True
+    
