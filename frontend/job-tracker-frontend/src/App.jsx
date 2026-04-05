@@ -36,6 +36,9 @@ function App() {
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [expandedId, setExpandedId] = useState(null)
+  const [isRegistering, setIsRegistering] = useState(false)
+  const [editingId, setEditingId] = useState(null)
+  const [editData, setEditData] = useState({})
 
   useEffect(() => {
     if (!token)
@@ -53,6 +56,24 @@ function App() {
       })
       .catch(err => { setError(err.message); setLoading(false); setFetching(false) })
   }, [filter, token])
+
+  function handleRegister() {
+    fetch(`${API}/register`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, password })
+    })
+      .then(res => res.json())
+      .then(data => {
+        if (data.detail) {
+          setError(typeof data.detail === 'string' ? data.detail : 'Registration failed')
+          return
+        }
+        setIsRegistering(false)
+        setError(null)
+      })
+      .catch(err => setError(err.message))
+  }
 
   function handleLogin() {
     const form = new URLSearchParams()
@@ -88,6 +109,30 @@ function App() {
       .catch(err => setError(err.message))
   }
 
+  function handleDeleteJob(id) {
+    fetch(`${API}/jobs/${id}`, {
+      method: 'DELETE',
+      headers: { 'Authorization': token }
+    })
+      .then(() => setJobs(prev => prev.filter(j => j.id !== id)))
+      .catch(err => setError(err.message))
+  }
+
+  function handleSaveEdit(id) {
+    fetch(`${API}/jobs/${id}`, {
+      method: 'PATCH',
+      headers: { 'Authorization': token, 'Content-Type': 'application/json' },
+      body: JSON.stringify(editData)
+    })
+      .then(res => res.json())
+      .then(updated => {
+        setJobs(prev => prev.map(j => j.id === id ? updated : j))
+        setEditingId(null)
+        setEditData({})
+      })
+      .catch(err => setError(err.message))
+  }
+
   function handleAddJob() {
     setSubmitting(true)
     fetch(`${API}/jobs/`, {
@@ -105,7 +150,7 @@ function App() {
       .catch(err => { setError(err.message); setSubmitting(false) })
   }
 
-  if (!token) 
+  if (!token)
     return (
       <div className="min-h-screen bg-gray-950 text-white flex items-center justify-center">
         <div className="bg-gray-800 rounded-xl p-8 flex flex-col gap-4 w-80">
@@ -125,10 +170,16 @@ function App() {
             className="bg-gray-700 rounded-lg px-4 py-2 outline-none"
           />
           <button
-            onClick={handleLogin}
+            onClick={isRegistering ? handleRegister : handleLogin}
             className="bg-blue-600 hover:bg-blue-500 rounded-lg py-2 font-medium"
           >
-            Login
+            {isRegistering ? 'Register' : 'Login'}
+          </button>
+          <button
+            onClick={() => { setIsRegistering(prev => !prev); setError(null) }}
+            className="text-gray-400 text-sm hover:text-white"
+          >
+            {isRegistering ? 'Already have an account? Login' : 'No account? Register'}
           </button>
         </div>
       </div>
@@ -240,14 +291,81 @@ function App() {
               </select>
             </div>
 
-            {expandedId === job.id && (
-              <div className="mt-4 pt-4 border-t border-gray-700 text-sm text-gray-400 flex flex-col gap-1">
-                {job.location && <p>📍 {job.location}</p>}
-                {job.source && <p>🔗 <a href={job.source} target="_blank" className="text-blue-400 hover:underline">{job.source}</a></p>}
-                {job.job_type && <p>💼 {job.job_type}</p>}
-                {job.deadline && <p>⏰ {job.deadline}</p>}
-              </div>
-            )}
+          {expandedId === job.id && (
+            <div className="mt-4 pt-4 border-t border-gray-700 text-sm flex flex-col gap-2">
+              {editingId === job.id ? (
+                <>
+                  <label className="text-gray-500 text-xs">Company</label>
+                  <input
+                    value={editData.company || ''}
+                    onChange={e => setEditData(prev => ({ ...prev, company: e.target.value }))}
+                    className="bg-gray-700 rounded-lg px-3 py-1 text-white outline-none"
+                  />
+                  <label className="text-gray-500 text-xs">Position</label>
+                  <input
+                    value={editData.position || ''}
+                    onChange={e => setEditData(prev => ({ ...prev, position: e.target.value }))}
+                    className="bg-gray-700 rounded-lg px-3 py-1 text-white outline-none"
+                  />
+                  <label className="text-gray-500 text-xs">Location</label>
+                  <input
+                    value={editData.location || ''}
+                    onChange={e => setEditData(prev => ({ ...prev, location: e.target.value }))}
+                    className="bg-gray-700 rounded-lg px-3 py-1 text-white outline-none"
+                  />
+                  <label className="text-gray-500 text-xs">Source URL</label>
+                  <input
+                    value={editData.source || ''}
+                    onChange={e => setEditData(prev => ({ ...prev, source: e.target.value }))}
+                    className="bg-gray-700 rounded-lg px-3 py-1 text-white outline-none"
+                  />
+                  <label className="text-gray-500 text-xs">Job Type</label>
+                  <input
+                    value={editData.job_type || ''}
+                    onChange={e => setEditData(prev => ({ ...prev, job_type: e.target.value }))}
+                    className="bg-gray-700 rounded-lg px-3 py-1 text-white outline-none"
+                  />
+                  <div className="flex gap-2 justify-end mt-1">
+                    <button
+                      onClick={() => { setEditingId(null); setEditData({}) }}
+                      className="px-3 py-1 bg-gray-700 text-gray-400 hover:bg-gray-600 rounded-lg text-xs"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={() => handleSaveEdit(job.id)}
+                      className="px-3 py-1 bg-green-600/20 text-green-400 hover:bg-green-600/40 rounded-lg text-xs"
+                    >
+                      Save
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="text-gray-400 flex flex-col gap-1">
+                    {job.location && <p>📍 {job.location}</p>}
+                    {job.source && <p>🔗 <a href={job.source} target="_blank" className="text-blue-400 hover:underline">{job.source}</a></p>}
+                    {job.job_type && <p>💼 {job.job_type}</p>}
+                    {job.deadline && <p>⏰ {job.deadline}</p>}
+                  </div>
+                  <div className="flex gap-2 justify-end mt-1">
+                    <button
+                      onClick={() => { setEditingId(job.id); setEditData({ company: job.company || '', position: job.position || '', location: job.location || '', source: job.source || '', job_type: job.job_type || '' }) }}
+                      className="px-3 py-1 bg-blue-600/20 text-blue-400 hover:bg-blue-600/40 rounded-lg text-xs"
+                    >
+                      Edit
+                    </button>
+                    <button
+                      onClick={() => handleDeleteJob(job.id)}
+                      className="px-3 py-1 bg-red-600/20 text-red-400 hover:bg-red-600/40 rounded-lg text-xs"
+                    >
+                      Delete
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+          )}
           </div>
         ))}
         {jobs.length === 0 && !fetching && <p className="text-gray-500">No jobs found.</p>}
