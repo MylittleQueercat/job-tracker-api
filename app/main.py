@@ -13,7 +13,7 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "https://job-tracker-api-psi.vercel.app"],
+    allow_origins=["http://localhost:5173", "https://tubular-klepon-2ec933.netlify.app"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
