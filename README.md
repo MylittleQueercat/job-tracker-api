@@ -9,7 +9,7 @@
 A RESTful API for tracking job applications and interview rounds, built with FastAPI and PostgreSQL.
 
 - **API**: [job-tracker-8xwj.onrender.com/docs](https://job-tracker-8xwj.onrender.com/docs)
-- **Frontend**: [job-tracker-hguo.netlify.app](https://job-tracker-hguo.netlify.app)
+- **Frontend**: [jobtrackerapi.netlify.app](https://jobtrackerapi.netlify.app)
 
 ---
 
