@@ -64,7 +64,7 @@ function App() {
       return
     setFetching(true)
     const url = filter === 'all' ? `${API}/jobs/` : `${API}/jobs/?status=${filter}`
-    fetch(url, { headers: { 'Authorization': token } })
+    authFetch(url)
       .then(res => res.json())
       .then(data => {
         if (!Array.isArray(data)) {
@@ -117,6 +117,22 @@ function App() {
       .catch(err => setError(err.message))
   }
 
+  function authFetch(url, options = {}) {
+    return fetch(url, {
+      ...options,
+      headers: { 'Authorization': token, ...options.headers }
+    }).then(res => {
+      if (res.status === 401) {
+        localStorage.removeItem('token')
+        setToken(null)
+        setUsername('')
+        setPassword('')
+        throw new Error('Session expired, please login again')
+      }
+      return res
+    })
+  }
+
   function showToast(message) {
     setToast(message)
     setTimeout(() => setToast(null), 2000)
@@ -124,9 +140,9 @@ function App() {
 
   function handleUpdateStatus(id, status) {
     console.log('sending:', id, status)  // ← 加这行
-    fetch(`${API}/jobs/${id}`, {
+    authFetch(`${API}/jobs/${id}`, {
       method: 'PATCH',
-      headers: { 'Authorization': token, 'Content-Type': 'application/json' },
+      headers: {'Content-Type': 'application/json' },
       body: JSON.stringify({ status })
     })
       .then(res => res.json())
@@ -139,9 +155,8 @@ function App() {
   }
 
   function handleDeleteJob(id) {
-    fetch(`${API}/jobs/${id}`, {
+    authFetch(`${API}/jobs/${id}`, {
       method: 'DELETE',
-      headers: { 'Authorization': token }
     })
       .then(() => {
         setJobs(prev => prev.filter(j => j.id !== id))
@@ -151,9 +166,9 @@ function App() {
   }
 
   function handleSaveEdit(id) {
-    fetch(`${API}/jobs/${id}`, {
+    authFetch(`${API}/jobs/${id}`, {
       method: 'PATCH',
-      headers: { 'Authorization': token, 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(editData)
     })
       .then(res => res.json())
@@ -176,9 +191,9 @@ function App() {
 
   function handleAddJob() {
     setSubmitting(true)
-    fetch(`${API}/jobs/`, {
+    authFetch(`${API}/jobs/`, {
       method: 'POST',
-      headers: { 'Authorization': token, 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(newJob)
     })
       .then(res => res.json())
@@ -193,18 +208,16 @@ function App() {
   }
 
   function fetchInterviews(jobId) {
-  fetch(`${API}/jobs/${jobId}/interviews`, {
-    headers: { 'Authorization': token }
-  })
+  authFetch(`${API}/jobs/${jobId}/interviews`)
     .then(res => res.json())
     .then(data => setInterviews(Array.isArray(data) ? data : []))
     .catch(err => setError(err.message))
 }
 
   function handleAddInterview(jobId) {
-    fetch(`${API}/jobs/${jobId}/interviews`, {
+    authFetch(`${API}/jobs/${jobId}/interviews`, {
       method: 'POST',
-      headers: { 'Authorization': token, 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         ...newInterview,
         round: parseInt(newInterview.round),
@@ -221,9 +234,8 @@ function App() {
   }
 
   function handleDeleteInterview(jobId, interviewId) {
-    fetch(`${API}/jobs/${jobId}/interviews/${interviewId}`, {
+    authFetch(`${API}/jobs/${jobId}/interviews/${interviewId}`, {
       method: 'DELETE',
-      headers: { 'Authorization': token }
     })
       .then(() => {
         setInterviews(prev => prev.filter(iv => iv.id !== interviewId))
@@ -233,9 +245,9 @@ function App() {
   }
 
   function handleUpdateInterview(jobId, interviewId, data) {
-    fetch(`${API}/jobs/${jobId}/interviews/${interviewId}`, {
+    authFetch(`${API}/jobs/${jobId}/interviews/${interviewId}`, {
       method: 'PATCH',
-      headers: { 'Authorization': token, 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data)
     })
       .then(res => res.json())
@@ -248,9 +260,14 @@ function App() {
 
   if (!token)
     return (
-      <div className="min-h-screen bg-gray-950 text-white flex items-center justify-center">
+      <div className="min-h-screen text-white flex items-center justify-center" style={{background: 'linear-gradient(135deg, #0f0f1a 0%, #1a0f2e 50%, #0f1a1a 100%)'}}>
         <div className="bg-gray-800 rounded-xl p-8 flex flex-col gap-4 w-80">
-          <h1 className="text-2xl font-bold">🎯 Job Tracker</h1>
+          <div className="text-center">
+            <h1 className="text-2xl font-bold" style={{background: 'linear-gradient(90deg, #f72585, #7209b7, #4cc9f0)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent'}}>
+              🎯 Job Tracker
+            </h1>
+            <p className="text-gray-500 text-sm mt-1">Track your journey to your dream job</p>
+          </div>
           {error && <p className="text-red-400 text-sm">{error}</p>}
           <input
             placeholder="Username"
@@ -297,7 +314,7 @@ function App() {
     </div>
 
       {/* Dashboard */}
-      <div className="bg-gray-800 rounded-xl p-6 mb-8">
+      <div className="rounded-xl p-6 mb-8" style={{background: 'rgba(255,255,255,0.05)', backdropFilter: 'blur(10px)'}}>
         <h2 className="text-lg font-semibold mb-4">Overview</h2>
         <div className="flex items-center gap-8">
           <PieChart width={200} height={200}>
@@ -326,7 +343,8 @@ function App() {
 
        <button
         onClick={() => setShowForm(prev => !prev)}
-        className="mb-6 px-4 py-2 bg-blue-600 hover:bg-blue-500 rounded-lg text-sm font-medium"
+        className="mb-6 px-4 py-2 rounded-lg text-sm font-bold text-white"
+        style={{background: 'linear-gradient(90deg, #f72585, #7209b7)'}}
       >
         {showForm ? '✕ Cancel' : '+ Add Job'}
       </button>
@@ -338,13 +356,15 @@ function App() {
               placeholder="Company *"
               value={newJob.company}
               onChange={e => setNewJob(prev => ({ ...prev, company: e.target.value }))}
-              className="flex-1 bg-gray-700 rounded-lg px-4 py-2 text-white placeholder-gray-500 outline-none"
+              className="flex-1 rounded-lg px-4 py-2 text-white placeholder-gray-500 outline-none"
+              style={{background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.1)'}}
             />
             <input
               placeholder="Position *"
               value={newJob.position}
               onChange={e => setNewJob(prev => ({ ...prev, position: e.target.value }))}
-              className="flex-1 bg-gray-700 rounded-lg px-4 py-2 text-white placeholder-gray-500 outline-none"
+              className="flex-1 rounded-lg px-4 py-2 text-white placeholder-gray-500 outline-none"
+              style={{background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.1)'}}
             />
           </div>
           <div className="flex gap-3">
@@ -352,13 +372,15 @@ function App() {
               placeholder="Location"
               value={newJob.location}
               onChange={e => setNewJob(prev => ({ ...prev, location: e.target.value }))}
-              className="flex-1 bg-gray-700 rounded-lg px-4 py-2 text-white placeholder-gray-500 outline-none"
+              className="flex-1 rounded-lg px-4 py-2 text-white placeholder-gray-500 outline-none"
+              style={{background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.1)'}}
             />
             <input
               placeholder="Source (LinkedIn, Indeed...)"
               value={newJob.source}
               onChange={e => setNewJob(prev => ({ ...prev, source: e.target.value }))}
-              className="flex-1 bg-gray-700 rounded-lg px-4 py-2 text-white placeholder-gray-500 outline-none"
+              className="flex-1 rounded-lg px-4 py-2 text-white placeholder-gray-500 outline-none"
+              style={{background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.1)'}}
             />
             <select
               value={newJob.status}
@@ -388,8 +410,8 @@ function App() {
           <button
             key={s}
             onClick={() => setFilter(s)}
-            className={`px-3 py-1 rounded-full text-sm font-medium transition-all
-              ${filter === s ? 'bg-white text-gray-900' : 'bg-gray-800 text-gray-400 hover:bg-gray-700'}`}
+            className={`px-3 py-1 rounded-full text-sm font-medium transition-all border ${filter === s ? 'text-white border-transparent' : 'text-gray-500 border-white/10 hover:border-white/30 hover:text-white'}`}
+            style={filter === s ? {background: 'linear-gradient(90deg, #f72585, #7209b7)'} : {}}
           >
             {s}
           </button>
@@ -401,7 +423,14 @@ function App() {
         {jobs.map(job => (
           <div
             key={job.id}
-            className="bg-gray-800 rounded-xl p-6"
+            className="rounded-xl p-6 cursor-pointer"
+            style={{
+              background: 'rgba(255,255,255,0.05)',
+              borderLeft: `4px solid ${STATUS_CHART_COLORS[job.status] || '#6b7280'}`,
+              backdropFilter: 'blur(10px)'
+            }}
+            onMouseEnter={e => e.currentTarget.style.boxShadow = `0 0 20px ${STATUS_CHART_COLORS[job.status]}33`}
+            onMouseLeave={e => e.currentTarget.style.boxShadow = 'none'}
           >
             <div
               className="flex justify-between items-center cursor-pointer"
@@ -511,7 +540,7 @@ function App() {
       )}
 
       {confirmDeleteId && (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[60]">
           <div className="bg-gray-800 rounded-xl p-6 flex flex-col gap-4 w-72">
             <p className="text-white font-medium">Delete this job?</p>
             <p className="text-gray-400 text-sm">This action cannot be undone.</p>
@@ -571,23 +600,56 @@ function App() {
           </div>
 
           {/* Job info */}
-          <div className="bg-gray-800 rounded-xl p-4 flex flex-col gap-2 text-sm text-gray-400">
-            {selectedJob.location && <p>📍 {selectedJob.location}</p>}
-            {selectedJob.source && <p>🔗 <a href={selectedJob.source} target="_blank" className="text-blue-400 hover:underline">{selectedJob.source}</a></p>}
-            {selectedJob.job_type && <p>💼 {selectedJob.job_type}</p>}
-            {selectedJob.deadline && <p>⏰ {selectedJob.deadline}</p>}
-            <div className="flex items-center gap-2 mt-1">
-              <span className="text-gray-500">Status:</span>
-              <select
-                value={selectedJob.status}
-                onChange={e => { handleUpdateStatus(selectedJob.id, e.target.value); setSelectedJob(prev => ({ ...prev, status: e.target.value })) }}
-                className="bg-gray-700 rounded-lg px-2 py-1 text-white outline-none text-sm"
-              >
-                {STATUSES.filter(s => s !== 'all').map(s => (
-                  <option key={s} value={s}>{s}</option>
-                ))}
-              </select>
-            </div>
+          <div className="rounded-xl p-4 flex flex-col gap-2 text-sm text-gray-400" style={{background: 'rgba(255,255,255,0.05)'}}>
+            {editingId === selectedJob.id ? (
+              <>
+                <label className="text-gray-500 text-xs">Company</label>
+                <input value={editData.company || ''} onChange={e => setEditData(prev => ({ ...prev, company: e.target.value }))} className="rounded-lg px-3 py-1 text-white outline-none" style={{background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.1)'}} />
+                <label className="text-gray-500 text-xs">Position</label>
+                <input value={editData.position || ''} onChange={e => setEditData(prev => ({ ...prev, position: e.target.value }))} className="rounded-lg px-3 py-1 text-white outline-none" style={{background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.1)'}} />
+                <label className="text-gray-500 text-xs">Location</label>
+                <input value={editData.location || ''} onChange={e => setEditData(prev => ({ ...prev, location: e.target.value }))} className="rounded-lg px-3 py-1 text-white outline-none" style={{background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.1)'}} />
+                <label className="text-gray-500 text-xs">Source URL</label>
+                <input value={editData.source || ''} onChange={e => setEditData(prev => ({ ...prev, source: e.target.value }))} className="rounded-lg px-3 py-1 text-white outline-none" style={{background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.1)'}} />
+                <label className="text-gray-500 text-xs">Job Type</label>
+                <input value={editData.job_type || ''} onChange={e => setEditData(prev => ({ ...prev, job_type: e.target.value }))} className="rounded-lg px-3 py-1 text-white outline-none" style={{background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.1)'}} />
+                <div className="flex gap-2 justify-end mt-2">
+                  <button onClick={() => { setEditingId(null); setEditData({}) }} className="px-3 py-1 text-gray-400 hover:text-white rounded-lg text-xs" style={{background: 'rgba(255,255,255,0.05)'}}>Cancel</button>
+                  <button onClick={() => { handleSaveEdit(selectedJob.id); setSelectedJob(prev => ({ ...prev, ...editData })) }} className="px-3 py-1 text-white rounded-lg text-xs" style={{background: 'linear-gradient(90deg, #f72585, #7209b7)'}}>Save</button>
+                </div>
+              </>
+            ) : (
+              <>
+                {selectedJob.location && <p>📍 {selectedJob.location}</p>}
+                {selectedJob.source && <p>🔗 <a href={selectedJob.source} target="_blank" className="text-blue-400 hover:underline">{selectedJob.source}</a></p>}
+                {selectedJob.job_type && <p>💼 {selectedJob.job_type}</p>}
+                {selectedJob.deadline && <p>⏰ {selectedJob.deadline}</p>}
+                <div className="flex items-center gap-2 mt-1">
+                  <span className="text-gray-500">Status:</span>
+                  <select value={selectedJob.status} onChange={e => { handleUpdateStatus(selectedJob.id, e.target.value); setSelectedJob(prev => ({ ...prev, status: e.target.value })) }} className="rounded-lg px-2 py-1 text-white outline-none text-sm" style={{background: 'rgba(255,255,255,0.08)'}}>
+                    {STATUSES.filter(s => s !== 'all').map(s => (
+                      <option key={s} value={s}>{s}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="flex gap-2 justify-end mt-2">
+                  <button
+                    onClick={() => { setEditingId(selectedJob.id); setEditData({ company: selectedJob.company || '', position: selectedJob.position || '', location: selectedJob.location || '', source: selectedJob.source || '', job_type: selectedJob.job_type || '' }) }}
+                    className="px-3 py-1 text-blue-400 rounded-lg text-xs"
+                    style={{background: 'rgba(76,201,240,0.1)'}}
+                  >
+                    Edit
+                  </button>
+                  <button
+                    onClick={() => setConfirmDeleteId(selectedJob.id)}
+                    className="px-3 py-1 text-red-400 rounded-lg text-xs"
+                    style={{background: 'rgba(247,37,133,0.1)'}}
+                  >
+                    Delete
+                  </button>
+                </div>
+              </>
+            )}
           </div>
 
           {/* Interviews */}
