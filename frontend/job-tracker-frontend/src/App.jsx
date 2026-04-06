@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react'
+import { PieChart, Pie, Cell, Tooltip, Legend } from 'recharts'
 
 const API = 'https://job-tracker-8xwj.onrender.com'
 
-const STATUSES = ['all', 'applied', 'phone_screen', 'technical_test', 'interview', 'final_interview', 'offer', 'rejected', 'withdrawn', 'ghosted']
+const STATUSES = ['all', 'applied', 'phone_screen', 'technical_test', 'interview', 'final_interview', 'offer', 'rejected', 'no_response']
 
 const STATUS_COLORS = {
   applied: 'bg-blue-500/20 text-blue-400',
@@ -12,8 +13,18 @@ const STATUS_COLORS = {
   final_interview: 'bg-pink-500/20 text-pink-400',
   offer: 'bg-green-500/20 text-green-400',
   rejected: 'bg-red-500/20 text-red-400',
-  withdrawn: 'bg-gray-500/20 text-gray-400',
-  ghosted: 'bg-gray-500/20 text-gray-400',
+  no_response: 'bg-gray-500/20 text-gray-400',
+}
+
+const STATUS_CHART_COLORS = {
+  applied: '#3b82f6',
+  phone_screen: '#eab308',
+  technical_test: '#a855f7',
+  interview: '#f97316',
+  final_interview: '#ec4899',
+  offer: '#22c55e',
+  rejected: '#ef4444',
+  no_response: '#6b7280',
 }
 
 function App() {
@@ -39,6 +50,8 @@ function App() {
   const [isRegistering, setIsRegistering] = useState(false)
   const [editingId, setEditingId] = useState(null)
   const [editData, setEditData] = useState({})
+  const [confirmDeleteId, setConfirmDeleteId] = useState(null)
+  const [toast, setToast] = useState(null)
 
   useEffect(() => {
     if (!token)
@@ -96,6 +109,11 @@ function App() {
       .catch(err => setError(err.message))
   }
 
+  function showToast(message) {
+    setToast(message)
+    setTimeout(() => setToast(null), 2000)
+  }
+
   function handleUpdateStatus(id, status) {
     fetch(`${API}/jobs/${id}`, {
       method: 'PATCH',
@@ -114,7 +132,10 @@ function App() {
       method: 'DELETE',
       headers: { 'Authorization': token }
     })
-      .then(() => setJobs(prev => prev.filter(j => j.id !== id)))
+      .then(() => {
+        setJobs(prev => prev.filter(j => j.id !== id))
+        showToast('Job deleted!')
+      })
       .catch(err => setError(err.message))
   }
 
@@ -129,8 +150,17 @@ function App() {
         setJobs(prev => prev.map(j => j.id === id ? updated : j))
         setEditingId(null)
         setEditData({})
+        showToast('Job updated!')
       })
       .catch(err => setError(err.message))
+  }
+
+  function getChartData() {
+    const counts = {}
+    jobs.forEach(job => {
+      counts[job.status] = (counts[job.status] || 0) + 1
+    })
+    return Object.entries(counts).map(([status, count]) => ({ name: status, value: count }))
   }
 
   function handleAddJob() {
@@ -146,6 +176,7 @@ function App() {
         setNewJob({ company: '', position: '', status: 'applied', location: '', source: '', job_type: '' })
         setShowForm(false)
         setSubmitting(false)
+        showToast('Job added!')
       })
       .catch(err => { setError(err.message); setSubmitting(false) })
   }
@@ -189,8 +220,44 @@ function App() {
   if (error) return <div className="p-8 text-red-500">Error: {error}</div>
 
   return (
-    <div className="min-h-screen bg-gray-950 text-white p-8">
-      <h1 className="text-3xl font-bold mb-8">🎯 Job Tracker</h1>
+      <div className="min-h-screen bg-gray-950 text-white p-8">
+    <div className="flex justify-between items-center mb-8">
+      <h1 className="text-3xl font-bold">🎯 Job Tracker</h1>
+      <button
+        onClick={() => { setToken(null); setUsername(''); setPassword(''); setError(null) }}
+        className="px-4 py-2 bg-gray-800 hover:bg-gray-700 text-gray-400 hover:text-white rounded-lg text-sm"
+      >
+        Logout
+      </button>
+    </div>
+
+      {/* Dashboard */}
+      <div className="bg-gray-800 rounded-xl p-6 mb-8">
+        <h2 className="text-lg font-semibold mb-4">Overview</h2>
+        <div className="flex items-center gap-8">
+          <PieChart width={200} height={200}>
+            <Pie
+              data={getChartData()}
+              cx={100}
+              cy={100}
+              innerRadius={60}
+              outerRadius={90}
+              dataKey="value"
+            >
+              {getChartData().map((entry, index) => (
+              <Cell key={index} fill={STATUS_CHART_COLORS[entry.name] || '#6b7280'} />
+              ))}
+            </Pie>
+            <Tooltip contentStyle={{ backgroundColor: '#1f2937', border: 'none', borderRadius: '8px' }} />
+          </PieChart>
+          <div className="flex flex-col gap-2">
+            <p className="text-gray-400 text-sm">Total: <span className="text-white font-semibold">{jobs.length}</span></p>
+            {getChartData().map(item => (
+              <p key={item.name} className="text-gray-400 text-sm">{item.name}: <span className="text-white">{item.value}</span></p>
+            ))}
+          </div>
+        </div>
+      </div>
 
        <button
         onClick={() => setShowForm(prev => !prev)}
@@ -282,7 +349,8 @@ function App() {
               <select
                 value={job.status}
                 onChange={e => { e.stopPropagation(); handleUpdateStatus(job.id, e.target.value) }}
-                className={`px-3 py-1 rounded-full text-sm font-medium cursor-pointer border-0 outline-none ${STATUS_COLORS[job.status] || 'bg-gray-500/20 text-gray-400'}`}
+                className="px-3 py-1 rounded-full text-sm font-medium cursor-pointer border-0 outline-none"
+                style={{ backgroundColor: STATUS_CHART_COLORS[job.status] + '33', color: STATUS_CHART_COLORS[job.status] }}
                 onClick={e => e.stopPropagation()}
               >
                 {STATUSES.filter(s => s !== 'all').map(s => (
@@ -356,7 +424,7 @@ function App() {
                       Edit
                     </button>
                     <button
-                      onClick={() => handleDeleteJob(job.id)}
+                      onClick={() => setConfirmDeleteId(job.id)}
                       className="px-3 py-1 bg-red-600/20 text-red-400 hover:bg-red-600/40 rounded-lg text-xs"
                     >
                       Delete
@@ -370,6 +438,35 @@ function App() {
         ))}
         {jobs.length === 0 && !fetching && <p className="text-gray-500">No jobs found.</p>}
       </div>
+
+      {toast && (
+        <div className="fixed top-6 left-1/2 -translate-x-1/2 bg-green-600 text-white px-4 py-2 rounded-lg text-sm shadow-lg z-50">
+          {toast}
+        </div>
+      )}
+
+      {confirmDeleteId && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
+          <div className="bg-gray-800 rounded-xl p-6 flex flex-col gap-4 w-72">
+            <p className="text-white font-medium">Delete this job?</p>
+            <p className="text-gray-400 text-sm">This action cannot be undone.</p>
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => setConfirmDeleteId(null)}
+                className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-gray-400 rounded-lg text-sm"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => { handleDeleteJob(confirmDeleteId); setConfirmDeleteId(null) }}
+                className="px-4 py-2 bg-red-600 hover:bg-red-500 text-white rounded-lg text-sm"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
