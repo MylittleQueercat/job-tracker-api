@@ -43,7 +43,7 @@ function App() {
     job_type: ''
   })
   const [submitting, setSubmitting] = useState(false)
-  const [token, setToken] = useState(null)
+  const [token, setToken] = useState(localStorage.getItem('token'))
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [expandedId, setExpandedId] = useState(null)
@@ -52,6 +52,12 @@ function App() {
   const [editData, setEditData] = useState({})
   const [confirmDeleteId, setConfirmDeleteId] = useState(null)
   const [toast, setToast] = useState(null)
+  const [selectedJob, setSelectedJob] = useState(null)
+  const [interviews, setInterviews] = useState([])
+  const [newInterview, setNewInterview] = useState({ round: 1, interview_type: '', date: '', notes: '' })
+  const [editingInterviewId, setEditingInterviewId] = useState(null)
+  const [editInterviewData, setEditInterviewData] = useState({})
+  const [confirmDeleteInterviewId, setConfirmDeleteInterviewId] = useState(null)
 
   useEffect(() => {
     if (!token)
@@ -104,7 +110,9 @@ function App() {
         setError('Invalid username or password')
         return
       }
-      setToken('Bearer ' + data.access_token)
+      const t = 'Bearer ' + data.access_token
+      localStorage.setItem('token', t)
+      setToken(t)
     })
       .catch(err => setError(err.message))
   }
@@ -113,20 +121,6 @@ function App() {
     setToast(message)
     setTimeout(() => setToast(null), 2000)
   }
-
-  // function handleUpdateStatus(id, status) {
-  //   fetch(`${API}/jobs/${id}`, {
-  //     method: 'PATCH',
-  //     headers: { 'Authorization': token, 'Content-Type': 'application/json' },
-  //     body: JSON.stringify({ status })
-  //   })
-  //     .then(res => res.json())
-  //     .then(updated => {
-  //       if (!updated.id) return
-  //       setJobs(prev => prev.map(j => j.id === id ? updated : j))
-  //     })
-  //     .catch(err => setError(err.message))
-  // }
 
   function handleUpdateStatus(id, status) {
     console.log('sending:', id, status)  // ← 加这行
@@ -198,6 +192,60 @@ function App() {
       .catch(err => { setError(err.message); setSubmitting(false) })
   }
 
+  function fetchInterviews(jobId) {
+  fetch(`${API}/jobs/${jobId}/interviews`, {
+    headers: { 'Authorization': token }
+  })
+    .then(res => res.json())
+    .then(data => setInterviews(Array.isArray(data) ? data : []))
+    .catch(err => setError(err.message))
+}
+
+  function handleAddInterview(jobId) {
+    fetch(`${API}/jobs/${jobId}/interviews`, {
+      method: 'POST',
+      headers: { 'Authorization': token, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        ...newInterview,
+        round: parseInt(newInterview.round),
+        date: newInterview.date || null
+      })
+    })
+      .then(res => res.json())
+      .then(data => {
+        setInterviews(prev => [...prev, data])
+        setNewInterview({ round: interviews.length + 2, interview_type: '', date: '', notes: '' })
+        showToast('Interview added!')
+      })
+      .catch(err => setError(err.message))
+  }
+
+  function handleDeleteInterview(jobId, interviewId) {
+    fetch(`${API}/jobs/${jobId}/interviews/${interviewId}`, {
+      method: 'DELETE',
+      headers: { 'Authorization': token }
+    })
+      .then(() => {
+        setInterviews(prev => prev.filter(iv => iv.id !== interviewId))
+        showToast('Interview deleted!')
+      })
+      .catch(err => setError(err.message))
+  }
+
+  function handleUpdateInterview(jobId, interviewId, data) {
+    fetch(`${API}/jobs/${jobId}/interviews/${interviewId}`, {
+      method: 'PATCH',
+      headers: { 'Authorization': token, 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    })
+      .then(res => res.json())
+      .then(updated => {
+        setInterviews(prev => prev.map(iv => iv.id === interviewId ? updated : iv))
+        showToast('Interview updated!')
+      })
+      .catch(err => setError(err.message))
+  }
+
   if (!token)
     return (
       <div className="min-h-screen bg-gray-950 text-white flex items-center justify-center">
@@ -241,7 +289,7 @@ function App() {
     <div className="flex justify-between items-center mb-8">
       <h1 className="text-3xl font-bold">🎯 Job Tracker</h1>
       <button
-        onClick={() => { setToken(null); setUsername(''); setPassword(''); setError(null) }}
+        onClick={() => { localStorage.removeItem('token'); setToken(null); setUsername(''); setPassword(''); setError(null) }}
         className="px-4 py-2 bg-gray-800 hover:bg-gray-700 text-gray-400 hover:text-white rounded-lg text-sm"
       >
         Logout
@@ -357,7 +405,7 @@ function App() {
           >
             <div
               className="flex justify-between items-center cursor-pointer"
-              onClick={() => setExpandedId(expandedId === job.id ? null : job.id)}
+              onClick={() => { setSelectedJob(job); fetchInterviews(job.id) }}
             >
               <div>
                 <h2 className="text-xl font-semibold">{job.company}</h2>
@@ -484,6 +532,200 @@ function App() {
           </div>
         </div>
       )}
+
+      {confirmDeleteInterviewId && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[60]">
+          <div className="bg-gray-800 rounded-xl p-6 flex flex-col gap-4 w-72">
+            <p className="text-white font-medium">Delete this interview record?</p>
+            <p className="text-gray-400 text-sm">This action cannot be undone.</p>
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => setConfirmDeleteInterviewId(null)}
+                className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-gray-400 rounded-lg text-sm"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => { handleDeleteInterview(selectedJob.id, confirmDeleteInterviewId); setConfirmDeleteInterviewId(null) }}
+                className="px-4 py-2 bg-red-600 hover:bg-red-500 text-white rounded-lg text-sm"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+          {selectedJob && (
+      <div className="fixed inset-0 z-50 flex justify-end">
+        <div className="absolute inset-0 bg-black/60" onClick={() => setSelectedJob(null)} />
+        <div className="relative bg-gray-900 w-full max-w-lg h-full overflow-y-auto p-6 flex flex-col gap-6 shadow-xl">
+          
+          {/* Header */}
+          <div className="flex justify-between items-start">
+            <div>
+              <h2 className="text-2xl font-bold">{selectedJob.company}</h2>
+              <p className="text-gray-400">{selectedJob.position}</p>
+            </div>
+            <button onClick={() => setSelectedJob(null)} className="text-gray-500 hover:text-white text-xl">✕</button>
+          </div>
+
+          {/* Job info */}
+          <div className="bg-gray-800 rounded-xl p-4 flex flex-col gap-2 text-sm text-gray-400">
+            {selectedJob.location && <p>📍 {selectedJob.location}</p>}
+            {selectedJob.source && <p>🔗 <a href={selectedJob.source} target="_blank" className="text-blue-400 hover:underline">{selectedJob.source}</a></p>}
+            {selectedJob.job_type && <p>💼 {selectedJob.job_type}</p>}
+            {selectedJob.deadline && <p>⏰ {selectedJob.deadline}</p>}
+            <div className="flex items-center gap-2 mt-1">
+              <span className="text-gray-500">Status:</span>
+              <select
+                value={selectedJob.status}
+                onChange={e => { handleUpdateStatus(selectedJob.id, e.target.value); setSelectedJob(prev => ({ ...prev, status: e.target.value })) }}
+                className="bg-gray-700 rounded-lg px-2 py-1 text-white outline-none text-sm"
+              >
+                {STATUSES.filter(s => s !== 'all').map(s => (
+                  <option key={s} value={s}>{s}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          {/* Interviews */}
+          <div>
+            <h3 className="text-lg font-semibold mb-3">Interview Records</h3>
+            {interviews.length === 0 && <p className="text-gray-500 text-sm">No interviews yet.</p>}
+            {interviews.map(iv => (
+              <div key={iv.id} className="bg-gray-800 rounded-xl p-4 mb-3 flex flex-col gap-2 text-sm">
+                {editingInterviewId === iv.id ? (
+                  <>
+                    <div className="flex gap-2">
+                      <div className="flex flex-col gap-1 w-20">
+                        <label className="text-gray-500 text-xs">Round</label>
+                        <input
+                          type="number"
+                          value={editInterviewData.round || ''}
+                          onChange={e => setEditInterviewData(prev => ({ ...prev, round: e.target.value }))}
+                          className="bg-gray-700 rounded-lg px-3 py-1 text-white outline-none"
+                        />
+                      </div>
+                      <div className="flex flex-col gap-1 w-28">
+                        <label className="text-gray-500 text-xs">Type</label>
+                        <input
+                          value={editInterviewData.interview_type || ''}
+                          onChange={e => setEditInterviewData(prev => ({ ...prev, interview_type: e.target.value }))}
+                          className="bg-gray-700 rounded-lg px-3 py-1 text-white outline-none"
+                        />
+                      </div>
+                      <div className="flex flex-col gap-1 w-36">
+                        <label className="text-gray-500 text-xs">Date</label>
+                        <input
+                          type="date"
+                          value={editInterviewData.date || ''}
+                          onChange={e => setEditInterviewData(prev => ({ ...prev, date: e.target.value }))}
+                          className="bg-gray-700 rounded-lg px-3 py-1 text-white outline-none"
+                        />
+                      </div>
+                    </div>
+                    <div className="flex flex-col gap-1">
+                      <label className="text-gray-500 text-xs">Notes</label>
+                      <textarea
+                        value={editInterviewData.notes || ''}
+                        onChange={e => setEditInterviewData(prev => ({ ...prev, notes: e.target.value }))}
+                        className="bg-gray-700 rounded-lg px-3 py-2 text-white outline-none resize-none h-20"
+                      />
+                    </div>
+                    <div className="flex gap-2 justify-end">
+                      <button
+                        onClick={() => { setEditingInterviewId(null); setEditInterviewData({}) }}
+                        className="px-3 py-1 bg-gray-700 text-gray-400 hover:bg-gray-600 rounded-lg text-xs"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        onClick={() => { handleUpdateInterview(selectedJob.id, iv.id, { ...editInterviewData, round: parseInt(editInterviewData.round) }); setEditingInterviewId(null) }}
+                        className="px-3 py-1 bg-green-600/20 text-green-400 hover:bg-green-600/40 rounded-lg text-xs"
+                      >
+                        Save
+                      </button>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <p className="font-medium">Round {iv.round} {iv.interview_type && `· ${iv.interview_type}`}</p>
+                    {iv.date && <p className="text-gray-400">📅 {iv.date}</p>}
+                    {iv.notes && <p className="text-gray-400 mt-1">{iv.notes}</p>}
+                    <div className="flex gap-2 justify-end mt-1">
+                      <button
+                        onClick={() => { setEditingInterviewId(iv.id); setEditInterviewData({ round: iv.round, interview_type: iv.interview_type || '', date: iv.date || '', notes: iv.notes || '' }) }}
+                        className="px-3 py-1 bg-blue-600/20 text-blue-400 hover:bg-blue-600/40 rounded-lg text-xs"
+                      >
+                        Edit
+                      </button>
+                      <button
+                        onClick={() => setConfirmDeleteInterviewId(iv.id)}
+                        className="px-3 py-1 bg-red-600/20 text-red-400 hover:bg-red-600/40 rounded-lg text-xs"
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  </>
+                )}
+              </div>
+            ))}
+          </div>
+
+          {/* Add interview form */}
+          <div className="bg-gray-800 rounded-xl p-4 flex flex-col gap-3">
+            <h4 className="font-medium text-sm">Add Interview</h4>
+            <div className="flex gap-2">
+              <div className="flex flex-col gap-1 w-20">
+                <label className="text-gray-500 text-xs">Round</label>
+                <input
+                  type="number"
+                  value={newInterview.round}
+                  onChange={e => setNewInterview(prev => ({ ...prev, round: e.target.value }))}
+                  className="bg-gray-700 rounded-lg px-3 py-1 text-white outline-none"
+                />
+              </div>
+              <div className="flex flex-col gap-1 w-40">
+                <label className="text-gray-500 text-xs">Type</label>
+                <input
+                  placeholder="Technical, HR..."
+                  value={newInterview.interview_type}
+                  onChange={e => setNewInterview(prev => ({ ...prev, interview_type: e.target.value }))}
+                  className="bg-gray-700 rounded-lg px-3 py-1 text-white outline-none placeholder-gray-500"
+                />
+              </div>
+              <div className="flex flex-col gap-1 w-40">
+                <label className="text-gray-500 text-xs">Date</label>
+                <input
+                  type="date"
+                  value={newInterview.date}
+                  onChange={e => setNewInterview(prev => ({ ...prev, date: e.target.value }))}
+                  className="bg-gray-700 rounded-lg px-3 py-1 text-white outline-none"
+                />
+              </div>
+            </div>
+            <div className="flex flex-col gap-1">
+              <label className="text-gray-500 text-xs">Notes</label>
+              <textarea
+                placeholder="What was asked, how it went..."
+                value={newInterview.notes}
+                onChange={e => setNewInterview(prev => ({ ...prev, notes: e.target.value }))}
+                className="bg-gray-700 rounded-lg px-3 py-2 text-white outline-none placeholder-gray-500 resize-none h-20"
+              />
+            </div>
+            <button
+              onClick={() => handleAddInterview(selectedJob.id)}
+              className="self-end px-4 py-2 bg-blue-600 hover:bg-blue-500 rounded-lg text-sm font-medium"
+            >
+              Add
+            </button>
+          </div>
+
+        </div>
+      </div>
+    )}
     </div>
   )
 }
