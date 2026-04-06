@@ -27,6 +27,17 @@ const STATUS_CHART_COLORS = {
   no_response: '#6b7280',
 }
 
+const MOTIVATIONS = [
+  "Every rejection is one step closer to your offer. 💪",
+  "Your dream job is looking for you too. 🌟",
+  "Keep going. The right company will see your value. 🚀",
+  "One application at a time. You've got this. ✨",
+  "Great things take time. Stay consistent. ✨",
+  "Your next interview could change everything. 🔥",
+  "Rejection is redirection. Keep pushing. 💫",
+  "The best is yet to come. Apply anyway. 🌈",
+]
+
 function App() {
   const [jobs, setJobs] = useState([])
   const [loading, setLoading] = useState(true)
@@ -58,6 +69,9 @@ function App() {
   const [editingInterviewId, setEditingInterviewId] = useState(null)
   const [editInterviewData, setEditInterviewData] = useState({})
   const [confirmDeleteInterviewId, setConfirmDeleteInterviewId] = useState(null)
+  const [search, setSearch] = useState('')
+  const [motivation] = useState(MOTIVATIONS[Math.floor(Math.random() * MOTIVATIONS.length)])
+  const [darkMode, setDarkMode] = useState(true)
 
   useEffect(() => {
     if (!token)
@@ -181,12 +195,39 @@ function App() {
       .catch(err => setError(err.message))
   }
 
+  function highlight(text, query) {
+    if (!query) return text
+    const parts = text.split(new RegExp(`(${query})`, 'gi'))
+    return parts.map((part, i) =>
+      part.toLowerCase() === query.toLowerCase()
+        ? <mark key={i} style={{background: 'linear-gradient(90deg, #f72585, #7209b7)', color: 'white', borderRadius: '3px', padding: '0 2px'}}>{part}</mark>
+        : part
+    )
+  }
+
   function getChartData() {
     const counts = {}
     jobs.forEach(job => {
       counts[job.status] = (counts[job.status] || 0) + 1
     })
     return Object.entries(counts).map(([status, count]) => ({ name: status, value: count }))
+  }
+
+  function getHeatmapData() {
+    const counts = {}
+    jobs.forEach(job => {
+      const date = job.created_at?.split('T')[0]
+      if (date) counts[date] = (counts[date] || 0) + 1
+    })
+    
+    const days = []
+    for (let i = 364; i >= 0; i--) {
+      const d = new Date()
+      d.setDate(d.getDate() - i)
+      const key = d.toISOString().split('T')[0]
+      days.push({ date: key, count: counts[key] || 0 })
+    }
+    return days
   }
 
   function handleAddJob() {
@@ -302,42 +343,81 @@ function App() {
   if (error) return <div className="p-8 text-red-500">Error: {error}</div>
 
   return (
-      <div className="min-h-screen bg-gray-950 text-white p-8">
+      <div className="min-h-screen p-8" style={{background: darkMode ? 'linear-gradient(135deg, #0f0f1a 0%, #1a0f2e 50%, #0f1a1a 100%)' : 'linear-gradient(135deg, #f8f9ff 0%, #f0e6ff 50%, #e6f9ff 100%)', color: darkMode ? 'white' : '#1a0f2e'}}>
     <div className="flex justify-between items-center mb-8">
-      <h1 className="text-3xl font-bold">🎯 Job Tracker</h1>
-      <button
-        onClick={() => { localStorage.removeItem('token'); setToken(null); setUsername(''); setPassword(''); setError(null) }}
-        className="px-4 py-2 bg-gray-800 hover:bg-gray-700 text-gray-400 hover:text-white rounded-lg text-sm"
-      >
-        Logout
-      </button>
+      <div>
+        <h1 className="text-3xl font-bold">🎯 Job Tracker</h1>
+        <p className="text-base italic mt-1" style={{color: '#4cc9f0'}}>{motivation}</p>
+      </div>
+        <div className="flex gap-2">
+          <button
+            onClick={() => setDarkMode(prev => !prev)}
+            className="px-4 py-2 rounded-lg text-sm border border-white/10 hover:border-white/30"
+            style={{background: 'rgba(255,255,255,0.05)'}}
+          >
+            {darkMode ? '🌙' : '☀️'}
+          </button>
+          <button
+            onClick={() => { localStorage.removeItem('token'); setToken(null); setUsername(''); setPassword(''); setError(null) }}
+            className="px-4 py-2 text-gray-400 hover:text-white rounded-lg text-sm border border-white/10 hover:border-white/30"
+            style={{background: 'rgba(255,255,255,0.05)'}}
+          >
+            Logout
+          </button>
+        </div>
     </div>
 
       {/* Dashboard */}
-      <div className="rounded-xl p-6 mb-8" style={{background: 'rgba(255,255,255,0.05)', backdropFilter: 'blur(10px)'}}>
-        <h2 className="text-lg font-semibold mb-4">Overview</h2>
-        <div className="flex items-center gap-8">
-          <PieChart width={200} height={200}>
-            <Pie
-              data={getChartData()}
-              cx={100}
-              cy={100}
-              innerRadius={60}
-              outerRadius={90}
-              dataKey="value"
-            >
-              {getChartData().map((entry, index) => (
+      <div className="rounded-xl p-6 mb-6" style={{background: 'rgba(255,255,255,0.05)', backdropFilter: 'blur(10px)'}}>
+       <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-semibold">Overview</h2>
+          <span className="text-2xl font-extrabold" style={{background: 'linear-gradient(90deg, #f72585, #4cc9f0)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent'}}>{jobs.length} Applications</span>
+        </div>
+      <div className="flex items-start gap-8 w-full">
+        {/* 饼图 */}
+        <PieChart width={200} height={200}>
+          <Pie
+            data={getChartData()}
+            cx={100}
+            cy={100}
+            innerRadius={60}
+            outerRadius={90}
+            dataKey="value"
+          >
+            {getChartData().map((entry, index) => (
               <Cell key={index} fill={STATUS_CHART_COLORS[entry.name] || '#6b7280'} />
-              ))}
-            </Pie>
-            <Tooltip contentStyle={{ backgroundColor: '#1f2937', border: 'none', borderRadius: '8px' }} />
-          </PieChart>
-          <div className="flex flex-col gap-2">
-            <p className="text-gray-400 text-sm">Total: <span className="text-white font-semibold">{jobs.length}</span></p>
-            {getChartData().map(item => (
-              <p key={item.name} className="text-gray-400 text-sm">{item.name}: <span className="text-white">{item.value}</span></p>
             ))}
+          </Pie>
+          <Tooltip contentStyle={{ backgroundColor: '#1f2937', border: 'none', borderRadius: '8px' }} />
+        </PieChart>
+
+        {/* 统计数字
+        <div className="flex flex-col gap-2 min-w-36">
+          <p className="text-gray-400 text-sm">Total: <span className="text-white font-semibold">{jobs.length}</span></p>
+          {getChartData().map(item => (
+            <p key={item.name} className="text-gray-400 text-sm">{item.name}: <span className="text-white">{item.value}</span></p>
+          ))}
+        </div> */}
+
+        {/* 热力图 */}
+        <div className="flex-1 grid grid-cols-2 gap-3">
+          <div className="rounded-xl p-4 flex flex-col gap-1" style={{background:'rgba(247,37,133,0.1)', border:'1px solid rgba(247,37,133,0.2)'}}>
+            <p className="text-2xl font-extrabold" style={{color:'#f72585'}}>{jobs.filter(j => j.status === 'interview' || j.status === 'final_interview').length}</p>
+            <p className="text-gray-400 text-xs">Active Interviews</p>
           </div>
+          <div className="rounded-xl p-4 flex flex-col gap-1" style={{background:'rgba(76,201,240,0.1)', border:'1px solid rgba(76,201,240,0.2)'}}>
+            <p className="text-2xl font-extrabold" style={{color:'#4cc9f0'}}>{jobs.filter(j => j.status === 'offer').length}</p>
+            <p className="text-gray-400 text-xs">Offers 🎉</p>
+          </div>
+          <div className="rounded-xl p-4 flex flex-col gap-1" style={{background:'rgba(114,9,183,0.1)', border:'1px solid rgba(114,9,183,0.2)'}}>
+            <p className="text-2xl font-extrabold" style={{color:'#7209b7'}}>{jobs.length === 0 ? 0 : Math.round(jobs.filter(j => j.status === 'interview' || j.status === 'final_interview' || j.status === 'offer').length / jobs.length * 100)}%</p>
+            <p className="text-gray-400 text-xs">Interview Rate</p>
+          </div>
+          <div className="rounded-xl p-4 flex flex-col gap-1" style={{background:'rgba(255,255,255,0.05)', border:'1px solid rgba(255,255,255,0.1)'}}>
+            <p className="text-2xl font-extrabold text-white">{jobs.filter(j => j.status === 'applied' || j.status === 'phone_screen').length}</p>
+            <p className="text-gray-400 text-xs">Awaiting Response</p>
+          </div>
+        </div>
         </div>
       </div>
 
@@ -350,7 +430,7 @@ function App() {
       </button>
 
       {showForm && (
-        <div className="bg-gray-800 rounded-xl p-6 mb-8 flex flex-col gap-3">
+        <div className="bg-gray-800 rounded-xl p-6 mb-9 flex flex-col gap-3">
           <div className="flex gap-3">
             <input
               placeholder="Company *"
@@ -404,6 +484,14 @@ function App() {
         </div>
       )}
 
+      <input
+        placeholder="🔍 Search company or position..."
+        value={search}
+        onChange={e => setSearch(e.target.value)}
+        className="w-full rounded-xl px-4 py-3 text-white placeholder-gray-500 outline-none mb-6"
+        style={{background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)'}}
+      />
+
       {/* Filter buttons */}
       <div className="flex flex-wrap gap-2 mb-8">
         {STATUSES.map(s => (
@@ -420,7 +508,12 @@ function App() {
 
       {/* Job list */}
       <div className={`grid gap-4 transition-opacity ${fetching ? 'opacity-40' : 'opacity-100'}`}>
-        {jobs.map(job => (
+        {jobs
+          .filter(job => 
+            job.company.toLowerCase().includes(search.toLowerCase()) ||
+            job.position.toLowerCase().includes(search.toLowerCase())
+          )
+          .map(job => (
           <div
             key={job.id}
             className="rounded-xl p-6 cursor-pointer"
@@ -437,8 +530,8 @@ function App() {
               onClick={() => { setSelectedJob(job); fetchInterviews(job.id) }}
             >
               <div>
-                <h2 className="text-xl font-semibold">{job.company}</h2>
-                <p className="text-gray-400">{job.position}</p>
+                <h2 className="text-xl font-semibold">{highlight(job.company, search)}</h2>
+                <p className="text-gray-400">{highlight(job.position, search)}</p>
               </div>
               <select
                 value={job.status}
