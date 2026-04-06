@@ -106,8 +106,8 @@ job-tracker-api/
 ```
 applied → phone_screen → technical_test → interview → final_interview → offer
                                                                        ↘ rejected
-                                                                       ↘ withdrawn
-                                                                       ↘ ghosted
+                                                                       ↘ no_response
+                                                                   
 ```
 
 Invalid status values are rejected with a `422 Unprocessable Entity` response.

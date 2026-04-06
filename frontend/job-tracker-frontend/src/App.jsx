@@ -114,7 +114,22 @@ function App() {
     setTimeout(() => setToast(null), 2000)
   }
 
+  // function handleUpdateStatus(id, status) {
+  //   fetch(`${API}/jobs/${id}`, {
+  //     method: 'PATCH',
+  //     headers: { 'Authorization': token, 'Content-Type': 'application/json' },
+  //     body: JSON.stringify({ status })
+  //   })
+  //     .then(res => res.json())
+  //     .then(updated => {
+  //       if (!updated.id) return
+  //       setJobs(prev => prev.map(j => j.id === id ? updated : j))
+  //     })
+  //     .catch(err => setError(err.message))
+  // }
+
   function handleUpdateStatus(id, status) {
+    console.log('sending:', id, status)  // ← 加这行
     fetch(`${API}/jobs/${id}`, {
       method: 'PATCH',
       headers: { 'Authorization': token, 'Content-Type': 'application/json' },
@@ -122,6 +137,7 @@ function App() {
     })
       .then(res => res.json())
       .then(updated => {
+        console.log('response:', updated)  // ← 加这行
         if (!updated.id) return
         setJobs(prev => prev.map(j => j.id === id ? updated : j))
       })
