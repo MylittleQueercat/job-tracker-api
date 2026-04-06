@@ -122,6 +122,7 @@ function App() {
     })
       .then(res => res.json())
       .then(updated => {
+        if (!updated.id) return
         setJobs(prev => prev.map(j => j.id === id ? updated : j))
       })
       .catch(err => setError(err.message))
