@@ -6,7 +6,10 @@
 ![Docker](https://img.shields.io/badge/Docker-ready-2496ED?style=flat-square&logo=docker&logoColor=white)
 ![pytest](https://img.shields.io/badge/Tests-15%20passed-success?style=flat-square&logo=pytest&logoColor=white)
 
-A RESTful API for tracking job applications and interview rounds, built with FastAPI and PostgreSQL. Deployed at [job-tracker-8xwj.onrender.com/docs](https://job-tracker-8xwj.onrender.com/docs).
+A RESTful API for tracking job applications and interview rounds, built with FastAPI and PostgreSQL.
+
+- **API**: [job-tracker-8xwj.onrender.com/docs](https://job-tracker-8xwj.onrender.com/docs)
+- **Frontend**: [job-tracker-hguo.netlify.app](https://job-tracker-hguo.netlify.app)
 
 ---
 
