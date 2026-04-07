@@ -194,20 +194,24 @@ export default function JobDrawer({
                 <p className="text-gray-300">{companyBrief.what_they_do}</p>
               </div>
               <div>
-                <p className="text-gray-500 text-xs mb-1">Tech stack</p>
-                <p className="text-gray-300">{companyBrief.tech_stack}</p>
+                <p className="text-gray-500 text-xs mb-1">Company stage</p>
+                <p className="text-gray-300">{companyBrief.company_stage}</p>
               </div>
               <div>
-                <p className="text-gray-500 text-xs mb-1">Culture questions to expect</p>
+                <p className="text-gray-500 text-xs mb-1">Likely technical topics</p>
                 <ul className="flex flex-col gap-1">
-                  {companyBrief.culture_questions.split(' | ').map((q, i) => (
-                    <li key={i} className="text-gray-300">— {q}</li>
+                  {companyBrief.likely_technical_topics.split(' | ').map((t, i) => (
+                    <li key={i} className="text-gray-300">— {t}</li>
                   ))}
                 </ul>
               </div>
               <div>
-                <p className="text-gray-500 text-xs mb-1">Tips</p>
-                <p className="text-gray-300">{companyBrief.tips}</p>
+                <p className="text-gray-500 text-xs mb-1">Question to ask</p>
+                <p className="text-gray-300">{companyBrief.question_to_ask}</p>
+              </div>
+              <div>
+                <p className="text-gray-500 text-xs mb-1">Market position</p>
+                <p className="text-gray-300">{companyBrief.market_position}</p>
               </div>
             </div>
           )}
