@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import confetti from 'canvas-confetti'
 import LoginForm from './components/LoginForm'
 import Dashboard from './components/Dashboard'
+import TodayFocus from './components/TodayFocus'
 import JobList from './components/JobList'
 import JobDrawer from './components/JobDrawer'
 import CatAssistant from './CatAssistant'
@@ -24,6 +25,7 @@ export default function App() {
 
   // ── Auth state ─────────────────────────────────────────────────────────────
   const [token, setToken] = useState(localStorage.getItem('token'))
+  const username = token ? JSON.parse(atob(token.split('.')[1])).sub : null
 
   // ── UI state ───────────────────────────────────────────────────────────────
   const [toast, setToast] = useState(null)
@@ -33,6 +35,7 @@ export default function App() {
   const [motivation] = useState(MOTIVATIONS[Math.floor(Math.random() * MOTIVATIONS.length)])
   const [dismissFollowUp, setDismissFollowUp] = useState(false)
   const [language, setLanguage] = useState(localStorage.getItem('language') || 'fr')
+  const [showUserMenu, setShowUserMenu] = useState(false)
 
   function switchLanguage(lang) {
     setLanguage(lang)
@@ -299,7 +302,9 @@ export default function App() {
       <div className="flex justify-between items-center mb-8">
         <div>
           <h1 className="text-3xl font-bold">🎯 Job Tracker</h1>
-          <p className="text-base italic mt-1" style={{ color: '#4cc9f0' }}>{motivation}</p>
+          <p className="text-base italic mt-1" style={{ color: '#4cc9f0' }}>
+                      {motivation}
+                    </p>
         </div>
         <div className="flex gap-2">
           <div className="flex rounded-lg overflow-hidden border border-white/10">
@@ -321,13 +326,32 @@ export default function App() {
           >
             {darkMode ? '🌙' : '☀️'}
           </button>
-          <button
-            onClick={handleLogout}
-            className="px-4 py-2 text-gray-400 hover:text-white rounded-lg text-sm border border-white/10 hover:border-white/30"
-            style={{ background: 'rgba(255,255,255,0.05)' }}
-          >
-            Logout
-          </button>
+          <div className="relative">
+            <button
+              onClick={() => setShowUserMenu(prev => !prev)}
+              className="px-4 py-2 text-gray-400 hover:text-white rounded-lg text-sm border border-white/10 hover:border-white/30 flex items-center gap-2"
+              style={{ background: 'rgba(255,255,255,0.05)' }}
+            >
+            <div className="w-6 h-6 rounded-full bg-gradient-to-br from-[#f72585] to-[#7209b7] flex items-center justify-center text-white text-xs font-bold shrink-0">
+                ✦
+              </div>
+              <span className="text-sm text-gray-300">{username}</span>
+            </button>
+            {showUserMenu && (
+              <>
+                <div className="fixed inset-0 z-10" onClick={() => setShowUserMenu(false)} />
+                <div className="absolute right-0 mt-2 z-20 rounded-xl border border-white/10 overflow-hidden"
+                  style={{ background: '#0f0f1a' }}>
+                  <button
+                    onClick={() => { handleLogout(); setShowUserMenu(false) }}
+                    className="w-full px-4 py-3 text-sm text-red-400 hover:bg-white/5 text-left"
+                  >
+                    Logout
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
         </div>
       </div>
 
@@ -364,6 +388,13 @@ export default function App() {
 
       {/* Dashboard stats */}
       <Dashboard jobs={jobs} />
+
+      {/* Today's focus — priority actions */}
+      <TodayFocus
+        jobs={jobs}
+        onSelectJob={setSelectedJob}
+        fetchInterviews={fetchInterviews}
+      />
 
       {/* Job list with search, filters and cards */}
       <JobList
