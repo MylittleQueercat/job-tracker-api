@@ -24,6 +24,7 @@ export default function JobList({
   const [jdText, setJdText] = useState('')
   const [parsing, setParsing] = useState(false)
   const typingTimeoutRef = useRef(null)
+  const [duplicateWarning, setDuplicateWarning] = useState(null)
 
   function handleSearch(e) {
     setSearch(e.target.value)
@@ -50,7 +51,15 @@ export default function JobList({
 
       {/* Add Job form */}
 {showForm && (
-  <div className="bg-gray-800 rounded-xl p-6 mb-9 flex flex-col gap-3">
+  <div
+    className="bg-gray-800 rounded-xl p-6 mb-9 flex flex-col gap-3"
+    onKeyDown={e => {
+      if (e.key === 'Enter' && !e.shiftKey && newJob.company && newJob.position) {
+        e.preventDefault()
+        onAddJob()
+      }
+    }}
+  >
     {/* JD paste area for AI auto-fill */}
     <div className="flex gap-3 items-start">
       <textarea
@@ -129,12 +138,45 @@ export default function JobList({
     </div>
     <div className="flex justify-end">
       <button
-        onClick={onAddJob}
+        onClick={() => {
+          const duplicate = jobs.find(j =>
+            j.company.toLowerCase().trim() === newJob.company.toLowerCase().trim()
+          )
+          if (duplicate) {
+            setDuplicateWarning(duplicate)
+            return
+          }
+          onAddJob()
+        }}
         disabled={submitting || !newJob.company || !newJob.position}
         className="px-6 py-2 bg-green-600 hover:bg-green-500 disabled:opacity-40 disabled:cursor-not-allowed rounded-lg text-sm font-medium"
       >
         {submitting ? 'Saving...' : 'Save'}
       </button>
+      {duplicateWarning && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[60]">
+          <div className="bg-gray-800 rounded-xl p-6 flex flex-col gap-4 w-80">
+            <p className="text-white font-medium">👀 Duplicate detected</p>
+            <p className="text-gray-400 text-s">
+              You already have <span className="text-white">{duplicateWarning.company}</span> in your list
+            </p>
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => setDuplicateWarning(null)}
+                className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-gray-400 rounded-lg text-sm"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => { setDuplicateWarning(null); onAddJob() }}
+                className="px-4 py-2 bg-green-600 hover:bg-green-500 text-white rounded-lg text-sm"
+              >
+                Add anyway
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   </div>
 )}
@@ -197,6 +239,28 @@ export default function JobList({
               <div>
                 <h2 className="text-xl font-semibold">{highlight(job.company, search)}</h2>
                 <p className="text-gray-400">{highlight(job.position, search)}</p>
+                <div className="flex items-center gap-2 mt-1">
+                  <p className="text-gray-600 text-xs">
+                    {new Date(job.created_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}
+                  </p>
+                  {job.source && (
+                    <>
+                      <span className="text-gray-700 text-xs">·</span>
+                      
+                      <a href={job.source.startsWith('http') ? job.source : `https://${job.source}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={e => e.stopPropagation()}
+                        className="text-xs text-gray-500 hover:text-[#4cc9f0] transition-colors"
+                      >
+                        {job.source.includes('linkedin') ? 'LinkedIn' :
+                         job.source.includes('welcometothejungle') || job.source.includes('wttj') ? 'WTTJ' :
+                         job.source.includes('indeed') ? 'Indeed' :
+                         'Source ↗'}
+                      </a>
+                    </>
+                  )}
+                </div>
               </div>
               <div className={`relative ${activeStatusPicker === job.id ? 'z-100' : 'z-10'}`}>
                 <button

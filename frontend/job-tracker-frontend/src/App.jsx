@@ -7,6 +7,7 @@ import JobList from './components/JobList'
 import JobDrawer from './components/JobDrawer'
 import CatAssistant from './CatAssistant'
 import { MOTIVATIONS } from './constants'
+import * as XLSX from 'xlsx'
 
 const API = 'https://job-tracker-8xwj.onrender.com'
 
@@ -35,6 +36,7 @@ export default function App() {
   const [dismissFollowUp, setDismissFollowUp] = useState(false)
   const [language, setLanguage] = useState(localStorage.getItem('language') || 'fr')
   const [showUserMenu, setShowUserMenu] = useState(false)
+  const [showExportMenu, setShowExportMenu] = useState(false)
 
   function switchLanguage(lang) {
     setLanguage(lang)
@@ -53,6 +55,28 @@ export default function App() {
   const [editingInterviewId, setEditingInterviewId] = useState(null)
   const [editInterviewData, setEditInterviewData] = useState({})
   const [confirmDeleteInterviewId, setConfirmDeleteInterviewId] = useState(null)
+  
+// ── Keyboard shortcuts ─────────────────────────────────────────────────────
+  useEffect(() => {
+    function handleKeyDown(e) {
+      // Ignore if typing in an input/textarea
+      if (['INPUT', 'TEXTAREA', 'SELECT'].includes(e.target.tagName)) return
+
+      if (e.key === 'n' || e.key === 'N') {
+        setShowForm(prev => !prev)
+      }
+      if (e.key === '/') {
+        e.preventDefault()
+        document.querySelector('input[placeholder="SEARCH DATABASE..."]')?.focus()
+      }
+      if (e.key === 'Escape') {
+        setSelectedJob(null)
+        setShowForm(false)
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [])
 
   // Fetch jobs when filter or token changes
   useEffect(() => {
@@ -176,6 +200,61 @@ export default function App() {
     }
   }
 
+// ── Export CSV ─────────────────────────────────────────────────────────────
+  function handleExportCSV() {
+    const headers = ['Company', 'Position', 'Status', 'Location', 'Job Type', 'Source', 'Deadline', 'Notes', 'Created At']
+    const rows = jobs.map(j => [
+      j.company,
+      j.position,
+      j.status,
+      j.location || '',
+      j.job_type || '',
+      j.source || '',
+      j.deadline || '',
+      j.notes || '',
+      new Date(j.created_at).toLocaleDateString('fr-FR')
+    ])
+    const csv = [headers, ...rows]
+      .map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(','))
+      .join('\n')
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `job-tracker-${new Date().toISOString().slice(0, 10)}.csv`
+    link.click()
+    URL.revokeObjectURL(url)
+    showToast('CSV exported!')
+  }
+
+// ── Export Excel ───────────────────────────────────────────────────────────
+  function handleExportExcel() {
+    const rows = jobs.map(j => ({
+      Company: j.company,
+      Position: j.position,
+      Status: j.status,
+      Location: j.location || '',
+      'Job Type': j.job_type || '',
+      Source: j.source || '',
+      Deadline: j.deadline || '',
+      Notes: j.notes || '',
+      'Created At': new Date(j.created_at).toLocaleDateString('fr-FR')
+    }))
+
+    const ws = XLSX.utils.json_to_sheet(rows)
+
+    // Column widths
+    ws['!cols'] = [
+      { wch: 20 }, { wch: 30 }, { wch: 15 }, { wch: 15 },
+      { wch: 12 }, { wch: 30 }, { wch: 12 }, { wch: 30 }, { wch: 12 }
+    ]
+
+    const wb = XLSX.utils.book_new()
+    XLSX.utils.book_append_sheet(wb, ws, 'Jobs')
+    XLSX.writeFile(wb, `job-tracker-${new Date().toISOString().slice(0, 10)}.xlsx`)
+    showToast('Excel exported!')
+  }
+
   // ── Job CRUD ───────────────────────────────────────────────────────────────
   function handleAddJob() {
     setSubmitting(true)
@@ -282,7 +361,7 @@ export default function App() {
   // Jobs that need follow-up: applied/interviewing and no update for 7+ days
   const followUpJobs = dismissFollowUp ? [] : jobs.filter(job => {
     if (!['applied', 'interviewing'].includes(job.status)) return false
-    const daysSince = (Date.now() - new Date(job.created_at)) / (1000 * 60 * 60 * 24)
+    const daysSince = (Date.now() - new Date(job.updated_at || job.created_at)) / (1000 * 60 * 60 * 24)
     return daysSince >= 7
   })
   if (!token) return <LoginForm onLogin={setToken} />
@@ -330,8 +409,37 @@ export default function App() {
             {showUserMenu && (
               <>
                 <div className="fixed inset-0 z-10" onClick={() => setShowUserMenu(false)} />
-                <div className="absolute right-0 mt-2 z-20 rounded-xl border border-white/10 overflow-hidden"
+                <div className="absolute right-0 mt-2 z-20 rounded-xl border border-white/10"
                   style={{ background: '#0f0f1a' }}>
+                  <div className="relative"
+                    onMouseEnter={() => setShowExportMenu(true)}
+                    onMouseLeave={() => setShowExportMenu(false)}
+                  >
+                    <button className="w-full px-4 py-3 text-sm text-gray-400 hover:bg-white/5 text-left flex items-center justify-between">
+                      Export
+                      <span className="text-gray-600 text-xs">◂</span>
+                    </button>
+                    {showExportMenu && (
+                      <div
+                        className="absolute right-full top-0 mr-1 flex flex-col rounded-xl border border-white/10 overflow-hidden"
+                        style={{ background: '#0f0f1a' }}
+                      >
+                        <button
+                          onClick={() => { handleExportCSV(); setShowUserMenu(false); setShowExportMenu(false) }}
+                          className="px-4 py-3 text-sm text-gray-400 hover:bg-white/5 text-left whitespace-nowrap"
+                        >
+                          CSV
+                        </button>
+                        <div className="border-t border-white/5" />
+                        <button
+                          onClick={() => { handleExportExcel(); setShowUserMenu(false); setShowExportMenu(false) }}
+                          className="px-4 py-3 text-sm text-gray-400 hover:bg-white/5 text-left whitespace-nowrap"
+                        >
+                          Excel
+                        </button>
+                      </div>
+                    )}
+                  </div>
                   <button
                     onClick={() => { handleLogout(); setShowUserMenu(false) }}
                     className="w-full px-4 py-3 text-sm text-red-400 hover:bg-white/5 text-left"

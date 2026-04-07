@@ -28,14 +28,14 @@ export default function TodayFocus({ jobs, onSelectJob, fetchInterviews }) {
   const followUp = jobs.filter(job => {
     const threshold = FOLLOWUP_THRESHOLDS[job.status]
     if (!threshold) return false
-    const daysSince = (now - new Date(job.created_at)) / (1000 * 60 * 60 * 24)
+    const daysSince = (now - new Date(job.updated_at || job.created_at)) / (1000 * 60 * 60 * 24)
     return daysSince >= threshold
   }).slice(0, 3)
 
   // 💀 Dead zone: no activity for 45+ days (except offer/rejected)
   const deadZone = jobs.filter(job => {
     if (['offer', 'rejected'].includes(job.status)) return false
-    const daysSince = (now - new Date(job.created_at)) / (1000 * 60 * 60 * 24)
+    const daysSince = (now - new Date(job.updated_at || job.created_at)) / (1000 * 60 * 60 * 24)
     return daysSince >= 45
   }).slice(0, 2)
 
