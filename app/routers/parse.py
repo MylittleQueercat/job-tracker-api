@@ -133,7 +133,7 @@ Return nothing else, no markdown, just the JSON.
         for attempt in range(2):
             try:
                 response = client.models.generate_content(
-                    model="-flash",
+                    model="gemini-3.1-flash-lite-preview",
                     contents=prompt
                 )
                 break

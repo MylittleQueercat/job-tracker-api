@@ -23,6 +23,7 @@ export default function JobDrawer({
     selectedJob?.company_brief ? JSON.parse(selectedJob.company_brief) : null
   )
   const [generatingBrief, setGeneratingBrief] = useState(false)
+  const [companyBriefExpanded, setCompanyBriefExpanded] = useState(false)
 
   return (
     <div className="fixed inset-0 z-50 flex justify-end">
@@ -105,7 +106,7 @@ export default function JobDrawer({
 		{/* Follow-up email generator */}
         <div className="rounded-xl p-4 flex flex-col gap-3" style={{ background: 'rgba(255,255,255,0.05)' }}>
           <div className="flex justify-between items-center">
-            <h3 className="text-sm font-semibold">Follow-up Email</h3>
+            <h3 className="text-base font-semibold">Follow-up Email</h3>
             <div className="flex gap-2">
               <button
                 onClick={async () => {
@@ -171,12 +172,18 @@ export default function JobDrawer({
 		{/* Company brief */}
         <div className="rounded-xl p-4 flex flex-col gap-3" style={{ background: 'rgba(255,255,255,0.05)' }}>
           <div className="flex justify-between items-center">
-            <h3 className="text-sm font-semibold">Company Brief</h3>
+            <button
+              onClick={() => setCompanyBriefExpanded(prev => !prev)}
+              className="text-sm font-semibold hover:opacity-70 transition-opacity flex items-center gap-2"
+            >
+              Company Brief
+              <span className="text-gray-400 text-2xl font-light">{companyBriefExpanded ? '−' : '+'}</span>
+            </button>
             <button
               onClick={async () => {
                 setGeneratingBrief(true)
                 const result = await onGenerateCompanyBrief(selectedJob)
-                if (result) setCompanyBrief(result)
+                if (result) { setCompanyBrief(result); setCompanyBriefExpanded(true) }
                 setGeneratingBrief(false)
               }}
               disabled={generatingBrief}
@@ -187,7 +194,7 @@ export default function JobDrawer({
             </button>
           </div>
 
-          {companyBrief && (
+          {companyBriefExpanded && companyBrief && (
             <div className="flex flex-col gap-3 text-sm">
               <div>
                 <p className="text-gray-500 text-xs mb-1">What they do</p>

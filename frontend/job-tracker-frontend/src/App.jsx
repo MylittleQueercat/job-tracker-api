@@ -32,6 +32,12 @@ export default function App() {
   const [isCelebrating, setIsCelebrating] = useState(false)
   const [motivation] = useState(MOTIVATIONS[Math.floor(Math.random() * MOTIVATIONS.length)])
   const [dismissFollowUp, setDismissFollowUp] = useState(false)
+  const [language, setLanguage] = useState(localStorage.getItem('language') || 'fr')
+
+  function switchLanguage(lang) {
+    setLanguage(lang)
+    localStorage.setItem('language', lang)
+  }
 
   // ── Drawer / selected job state ────────────────────────────────────────────
   const [selectedJob, setSelectedJob] = useState(null)
@@ -142,13 +148,15 @@ export default function App() {
 // ── Company brief generation ───────────────────────────────────────────────
   async function handleGenerateCompanyBrief(job) {
     try {
+      console.log('generating brief with language:', language)
       const res = await authFetch(`${API}/api/company-brief`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           job_id: job.id,
           company: job.company,
-          position: job.position
+          position: job.position,
+          language
         })
       })
       if (!res.ok) {
@@ -156,7 +164,10 @@ export default function App() {
         showToast(err.detail || 'Generation failed')
         return null
       }
-      return await res.json()
+      const brief = await res.json()
+      // Update the job in local state so brief persists without refetch
+      setJobs(prev => prev.map(j => j.id === job.id ? { ...j, company_brief: JSON.stringify(brief) } : j))
+      return brief
     } catch (err) {
       showToast('Generation failed')
       return null
@@ -291,6 +302,18 @@ export default function App() {
           <p className="text-base italic mt-1" style={{ color: '#4cc9f0' }}>{motivation}</p>
         </div>
         <div className="flex gap-2">
+          <div className="flex rounded-lg overflow-hidden border border-white/10">
+            {['fr', 'en', 'zh'].map(lang => (
+              <button
+                key={lang}
+                onClick={() => switchLanguage(lang)}
+                className={`px-3 py-2 text-xs font-medium transition-all ${language === lang ? 'text-white' : 'text-gray-500 hover:text-white'}`}
+                style={language === lang ? { background: 'linear-gradient(90deg, #f72585, #7209b7)' } : { background: 'rgba(255,255,255,0.05)' }}
+              >
+                {lang === 'fr' ? 'FR' : lang === 'en' ? 'EN' : '中'}
+              </button>
+            ))}
+          </div>
           <button
             onClick={() => setDarkMode(prev => !prev)}
             className="px-4 py-2 rounded-lg text-sm border border-white/10 hover:border-white/30"
@@ -428,7 +451,7 @@ export default function App() {
         confirmDeleteId={confirmDeleteId} setConfirmDeleteId={setConfirmDeleteId}
         onUpdateStatus={handleUpdateStatus} onSaveEdit={handleSaveEdit} onDeleteJob={handleDeleteJob}
         onAddInterview={handleAddInterview} onUpdateInterview={handleUpdateInterview} onDeleteInterview={handleDeleteInterview}
-        onGenerateFollowUp={handleGenerateFollowUp}
+        onGenerateFollowUp={(job, lang) => handleGenerateFollowUp(job, lang || language)}
         onGenerateCompanyBrief={handleGenerateCompanyBrief}
       />
 
