@@ -18,6 +18,7 @@ class Job(Base):
     notes = Column(String, nullable=True)
     company_brief = Column(String, nullable=True)
     created_at = Column(DateTime, server_default=func.now())
+    updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
 
     interviews = relationship("Interview", back_populates="job", cascade="all, delete")
 

@@ -69,5 +69,6 @@ class JobResponse(BaseModel):
     notes: Optional[str]
     company_brief: Optional[str] = None
     created_at: datetime
+    updated_at: datetime
     interviews: list[InterviewResponse] = []
     

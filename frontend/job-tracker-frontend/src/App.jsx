@@ -29,7 +29,6 @@ export default function App() {
 
   // ── UI state ───────────────────────────────────────────────────────────────
   const [toast, setToast] = useState(null)
-  const [darkMode, setDarkMode] = useState(true)
   const [isTyping, setIsTyping] = useState(false)
   const [isCelebrating, setIsCelebrating] = useState(false)
   const [motivation] = useState(MOTIVATIONS[Math.floor(Math.random() * MOTIVATIONS.length)])
@@ -291,12 +290,10 @@ export default function App() {
   if (error) return <div className="p-8 text-red-500">Error: {error}</div>
 
   return (
-    <div className="min-h-screen p-8" style={{
-      background: darkMode
-        ? 'linear-gradient(135deg, #0f0f1a 0%, #1a0f2e 50%, #0f1a1a 100%)'
-        : 'linear-gradient(135deg, #f8f9ff 0%, #f0e6ff 50%, #e6f9ff 100%)',
-      color: darkMode ? 'white' : '#1a0f2e'
-    }}>
+      <div className="min-h-screen p-8" style={{
+            background: 'linear-gradient(135deg, #0f0f1a 0%, #1a0f2e 50%, #0f1a1a 100%)',
+            color: 'white'
+      }}>
 
       {/* Header */}
       <div className="flex justify-between items-center mb-8">
@@ -319,13 +316,6 @@ export default function App() {
               </button>
             ))}
           </div>
-          <button
-            onClick={() => setDarkMode(prev => !prev)}
-            className="px-4 py-2 rounded-lg text-sm border border-white/10 hover:border-white/30"
-            style={{ background: 'rgba(255,255,255,0.05)' }}
-          >
-            {darkMode ? '🌙' : '☀️'}
-          </button>
           <div className="relative">
             <button
               onClick={() => setShowUserMenu(prev => !prev)}
