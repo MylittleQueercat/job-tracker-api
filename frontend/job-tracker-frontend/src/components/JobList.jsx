@@ -17,10 +17,12 @@ export default function JobList({
   jobs, fetching, filter, setFilter,
   onSelectJob, onUpdateStatus, onDeleteJob,
   newJob, setNewJob, onAddJob, submitting,
-  showForm, setShowForm, onTyping
+  showForm, setShowForm, onTyping, onParseJD
 }) {
   const [search, setSearch] = useState('')
   const [activeStatusPicker, setActiveStatusPicker] = useState(null)
+  const [jdText, setJdText] = useState('')
+  const [parsing, setParsing] = useState(false)
   const typingTimeoutRef = useRef(null)
 
   function handleSearch(e) {
@@ -48,6 +50,39 @@ export default function JobList({
 
       {/* Add Job form */}
       {showForm && (
+		{/* JD paste area for AI auto-fill */}
+		<div className="flex gap-3 items-start">
+		<textarea
+			placeholder="✨ Paste job description here to auto-fill..."
+			value={jdText}
+			onChange={e => setJdText(e.target.value)}
+			rows={3}
+			className="flex-1 rounded-lg px-4 py-2 text-white placeholder-gray-500 outline-none resize-none text-sm"
+			style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.1)' }}
+		/>
+		<button
+			onClick={async () => {
+			if (!jdText.trim()) return
+			setParsing(true)
+			const result = await onParseJD(jdText)
+			if (result) {
+				setNewJob(prev => ({
+				...prev,
+				company: result.company || prev.company,
+				position: result.title || prev.position,
+				location: result.location || prev.location,
+				}))
+				setJdText('')
+			}
+			setParsing(false)
+			}}
+			disabled={parsing || !jdText.trim()}
+			className="px-4 py-2 rounded-lg text-sm font-bold text-white disabled:opacity-40 disabled:cursor-not-allowed whitespace-nowrap"
+			style={{ background: 'linear-gradient(90deg, #f72585, #7209b7)' }}
+		>
+			{parsing ? '⏳ Parsing...' : '✨ Parse JD'}
+		</button>
+		</div>
         <div className="bg-gray-800 rounded-xl p-6 mb-9 flex flex-col gap-3">
           <div className="flex gap-3">
             <input
