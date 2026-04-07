@@ -59,5 +59,5 @@ Job description:
     except Exception as e:
         error_msg = str(e)
         if "429" in error_msg or "quota" in error_msg.lower():
-            raise HTTPException(status_code=429, detail="Daily AI quota exceeded. Please fill in manually.")
+            raise HTTPException(status_code=429, detail=f"Rate limited: {error_msg}")
         raise HTTPException(status_code=500, detail=f"AI parsing failed: {error_msg}")
