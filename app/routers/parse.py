@@ -165,6 +165,7 @@ class CompanyBriefRequest(BaseModel):
     job_id: int
     company: str
     position: str
+    language: str = "fr"
 
 # Response schema
 class CompanyBrief(BaseModel):
@@ -179,7 +180,23 @@ async def generate_company_brief(
     body: CompanyBriefRequest,
     current_user=Depends(get_current_user)
 ):
-    prompt = f"""
+    if body.language == "zh":
+        prompt = f"""
+你是一位法国求职面试准备助手。请为以下职位生成简洁的公司简报。
+
+公司：{body.company}
+职位：{body.position}
+
+只返回一个有效的JSON对象，包含以下键：「what_they_do」、「company_stage」、「likely_technical_topics」、「question_to_ask」、「market_position」。
+- "what_they_do"：1-2句话介绍公司及其主要产品
+- "company_stage"：初创/成长期/大公司/上市公司 + 1句背景说明
+- "likely_technical_topics"：该职位可能考察的3-4个技术方向，用 " | " 分隔
+- "question_to_ask"：一个可以问面试官的好问题，体现你做了充分准备
+- "market_position"：在法国市场的定位及1-2个主要竞争对手
+不要返回任何其他内容，不要markdown，只返回JSON。
+"""
+    elif body.language == "en":
+        prompt = f"""
 You are an interview preparation assistant for tech jobs in France. Generate a concise company brief.
 
 Company: {body.company}
@@ -192,6 +209,21 @@ Return ONLY a valid JSON object with these exact keys: "what_they_do", "company_
 - "question_to_ask": one smart question the candidate can ask the interviewer that shows preparation
 - "market_position": their position in the French market and 1-2 main competitors
 Return nothing else, no markdown, just the JSON.
+"""
+    else:  # fr
+        prompt = f"""
+Tu es un assistant de préparation aux entretiens tech en France. Génère un brief entreprise concis.
+
+Entreprise : {body.company}
+Poste : {body.position}
+
+Retourne UNIQUEMENT un objet JSON valide avec ces clés exactes : "what_they_do", "company_stage", "likely_technical_topics", "question_to_ask", "market_position".
+- "what_they_do" : 1-2 phrases sur ce que fait l'entreprise et son produit principal
+- "company_stage" : startup / scale-up / grande entreprise / entreprise cotée + 1 phrase de contexte
+- "likely_technical_topics" : 3-4 sujets techniques probables pour ce poste, séparés par " | "
+- "question_to_ask" : une question pertinente à poser à l'intervieweur qui montre ta préparation
+- "market_position" : leur position sur le marché français et 1-2 concurrents principaux
+Ne retourne rien d'autre, pas de markdown, juste le JSON.
 """
 
     try:
