@@ -49,95 +49,96 @@ export default function JobList({
       </button>
 
       {/* Add Job form */}
-      {showForm && (
-		{/* JD paste area for AI auto-fill */}
-		<div className="flex gap-3 items-start">
-		<textarea
-			placeholder="✨ Paste job description here to auto-fill..."
-			value={jdText}
-			onChange={e => setJdText(e.target.value)}
-			rows={3}
-			className="flex-1 rounded-lg px-4 py-2 text-white placeholder-gray-500 outline-none resize-none text-sm"
-			style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.1)' }}
-		/>
-		<button
-			onClick={async () => {
-			if (!jdText.trim()) return
-			setParsing(true)
-			const result = await onParseJD(jdText)
-			if (result) {
-				setNewJob(prev => ({
-				...prev,
-				company: result.company || prev.company,
-				position: result.title || prev.position,
-				location: result.location || prev.location,
-				}))
-				setJdText('')
-			}
-			setParsing(false)
-			}}
-			disabled={parsing || !jdText.trim()}
-			className="px-4 py-2 rounded-lg text-sm font-bold text-white disabled:opacity-40 disabled:cursor-not-allowed whitespace-nowrap"
-			style={{ background: 'linear-gradient(90deg, #f72585, #7209b7)' }}
-		>
-			{parsing ? '⏳ Parsing...' : '✨ Parse JD'}
-		</button>
-		</div>
-        <div className="bg-gray-800 rounded-xl p-6 mb-9 flex flex-col gap-3">
-          <div className="flex gap-3">
-            <input
-              placeholder="Company *"
-              value={newJob.company}
-              onChange={e => setNewJob(prev => ({ ...prev, company: e.target.value }))}
-              className="flex-1 rounded-lg px-4 py-2 text-white placeholder-gray-500 outline-none"
-              style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.1)' }}
-            />
-            <input
-              placeholder="Position *"
-              value={newJob.position}
-              onChange={e => setNewJob(prev => ({ ...prev, position: e.target.value }))}
-              className="flex-1 rounded-lg px-4 py-2 text-white placeholder-gray-500 outline-none"
-              style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.1)' }}
-            />
-          </div>
-          <div className="flex gap-3">
-            <input
-              placeholder="Location"
-              value={newJob.location}
-              onChange={e => setNewJob(prev => ({ ...prev, location: e.target.value }))}
-              className="flex-1 rounded-lg px-4 py-2 text-white placeholder-gray-500 outline-none"
-              style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.1)' }}
-            />
-            <input
-              placeholder="Source (LinkedIn, Indeed...)"
-              value={newJob.source}
-              onChange={e => setNewJob(prev => ({ ...prev, source: e.target.value }))}
-              className="flex-1 rounded-lg px-4 py-2 text-white placeholder-gray-500 outline-none"
-              style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.1)' }}
-            />
-            <select
-              value={newJob.status}
-              onChange={e => setNewJob(prev => ({ ...prev, status: e.target.value }))}
-              className="bg-gray-700 rounded-lg px-4 py-2 text-white outline-none"
-            >
-              {STATUSES.filter(s => s !== 'all').map(s => (
-                <option key={s} value={s} className="bg-gray-800 text-white">{s}</option>
-              ))}
-            </select>
-          </div>
-          <div className="flex justify-end">
-            <button
-              onClick={onAddJob}
-              disabled={submitting || !newJob.company || !newJob.position}
-              className="px-6 py-2 bg-green-600 hover:bg-green-500 disabled:opacity-40 disabled:cursor-not-allowed rounded-lg text-sm font-medium"
-            >
-              {submitting ? 'Saving...' : 'Save'}
-            </button>
-          </div>
-        </div>
-      )}
+{showForm && (
+  <div className="bg-gray-800 rounded-xl p-6 mb-9 flex flex-col gap-3">
+    {/* JD paste area for AI auto-fill */}
+    <div className="flex gap-3 items-start">
+      <textarea
+        placeholder="✨ Paste job description here to auto-fill..."
+        value={jdText}
+        onChange={e => setJdText(e.target.value)}
+        rows={3}
+        className="flex-1 rounded-lg px-4 py-2 text-white placeholder-gray-500 outline-none resize-none text-sm"
+        style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.1)' }}
+      />
+      <button
+        onClick={async () => {
+          if (!jdText.trim()) return
+          setParsing(true)
+          const result = await onParseJD(jdText)
+          if (result) {
+            setNewJob(prev => ({
+              ...prev,
+              company: result.company || prev.company,
+              position: result.title || prev.position,
+              location: result.location || prev.location,
+            }))
+            setJdText('')
+          }
+          setParsing(false)
+        }}
+        disabled={parsing || !jdText.trim()}
+        className="px-4 py-2 rounded-lg text-sm font-bold text-white disabled:opacity-40 disabled:cursor-not-allowed whitespace-nowrap"
+        style={{ background: 'linear-gradient(90deg, #f72585, #7209b7)' }}
+      >
+        {parsing ? '⏳ Parsing...' : '✨ Parse JD'}
+      </button>
+    </div>
 
-      {/* Search bar */}
+    {/* Manual input fields */}
+    <div className="flex gap-3">
+      <input
+        placeholder="Company *"
+        value={newJob.company}
+        onChange={e => setNewJob(prev => ({ ...prev, company: e.target.value }))}
+        className="flex-1 rounded-lg px-4 py-2 text-white placeholder-gray-500 outline-none"
+        style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.1)' }}
+      />
+      <input
+        placeholder="Position *"
+        value={newJob.position}
+        onChange={e => setNewJob(prev => ({ ...prev, position: e.target.value }))}
+        className="flex-1 rounded-lg px-4 py-2 text-white placeholder-gray-500 outline-none"
+        style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.1)' }}
+      />
+    </div>
+    <div className="flex gap-3">
+      <input
+        placeholder="Location"
+        value={newJob.location}
+        onChange={e => setNewJob(prev => ({ ...prev, location: e.target.value }))}
+        className="flex-1 rounded-lg px-4 py-2 text-white placeholder-gray-500 outline-none"
+        style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.1)' }}
+      />
+      <input
+        placeholder="Source (LinkedIn, Indeed...)"
+        value={newJob.source}
+        onChange={e => setNewJob(prev => ({ ...prev, source: e.target.value }))}
+        className="flex-1 rounded-lg px-4 py-2 text-white placeholder-gray-500 outline-none"
+        style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.1)' }}
+      />
+      <select
+        value={newJob.status}
+        onChange={e => setNewJob(prev => ({ ...prev, status: e.target.value }))}
+        className="bg-gray-700 rounded-lg px-4 py-2 text-white outline-none"
+      >
+        {STATUSES.filter(s => s !== 'all').map(s => (
+          <option key={s} value={s} className="bg-gray-800 text-white">{s}</option>
+        ))}
+      </select>
+    </div>
+    <div className="flex justify-end">
+      <button
+        onClick={onAddJob}
+        disabled={submitting || !newJob.company || !newJob.position}
+        className="px-6 py-2 bg-green-600 hover:bg-green-500 disabled:opacity-40 disabled:cursor-not-allowed rounded-lg text-sm font-medium"
+      >
+        {submitting ? 'Saving...' : 'Save'}
+      </button>
+    </div>
+  </div>
+)}
+{/* Search bar */}
       <div className="relative group max-w-2xl mx-auto mb-12">
         <div className="absolute left-6 top-1/2 -translate-y-1/2 flex items-center gap-3 pointer-events-none z-10">
           <span className="text-[#4cc9f0] font-mono text-xs opacity-40 group-focus-within:opacity-100 transition-opacity">$</span>
@@ -189,7 +190,6 @@ export default function JobList({
             onMouseEnter={e => e.currentTarget.style.boxShadow = `0 0 20px ${STATUS_CHART_COLORS[job.status]}33`}
             onMouseLeave={e => e.currentTarget.style.boxShadow = 'none'}
           >
-            {/* Card header — click to open drawer */}
             <div
               className="flex justify-between items-center cursor-pointer"
               onClick={() => onSelectJob(job)}
@@ -198,8 +198,6 @@ export default function JobList({
                 <h2 className="text-xl font-semibold">{highlight(job.company, search)}</h2>
                 <p className="text-gray-400">{highlight(job.position, search)}</p>
               </div>
-
-              {/* Status picker button */}
               <div className={`relative ${activeStatusPicker === job.id ? 'z-100' : 'z-10'}`}>
                 <button
                   onClick={e => { e.stopPropagation(); setActiveStatusPicker(activeStatusPicker === job.id ? null : job.id) }}
@@ -212,8 +210,6 @@ export default function JobList({
                 >
                   {job.status.replace('_', ' ')}
                 </button>
-
-                {/* Status dropdown */}
                 {activeStatusPicker === job.id && (
                   <>
                     <div className="fixed inset-0 z-10" onClick={e => { e.stopPropagation(); setActiveStatusPicker(null) }} />

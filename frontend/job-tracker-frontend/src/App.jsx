@@ -31,6 +31,7 @@ export default function App() {
   const [isTyping, setIsTyping] = useState(false)
   const [isCelebrating, setIsCelebrating] = useState(false)
   const [motivation] = useState(MOTIVATIONS[Math.floor(Math.random() * MOTIVATIONS.length)])
+  const [dismissFollowUp, setDismissFollowUp] = useState(false)
 
   // ── Drawer / selected job state ────────────────────────────────────────────
   const [selectedJob, setSelectedJob] = useState(null)
@@ -216,6 +217,12 @@ export default function App() {
   }
 
   // ── Render ─────────────────────────────────────────────────────────────────
+  // Jobs that need follow-up: applied/interviewing and no update for 7+ days
+  const followUpJobs = dismissFollowUp ? [] : jobs.filter(job => {
+    if (!['applied', 'interviewing'].includes(job.status)) return false
+    const daysSince = (Date.now() - new Date(job.created_at)) / (1000 * 60 * 60 * 24)
+    return daysSince >= 7
+  })
   if (!token) return <LoginForm onLogin={setToken} />
   if (loading) return <div className="p-8 text-white">Loading...</div>
   if (error) return <div className="p-8 text-red-500">Error: {error}</div>
@@ -251,6 +258,37 @@ export default function App() {
           </button>
         </div>
       </div>
+
+      {/* Follow-up reminder banner */}
+      {followUpJobs.length > 0 && (
+        <div className="mb-6 px-4 py-3 rounded-xl text-sm flex items-center justify-between gap-3"
+          style={{ background: 'rgba(251,191,36,0.1)', border: '1px solid rgba(251,191,36,0.3)', color: '#fbbf24' }}>
+          <div className="flex items-center gap-3">
+            <span>⏰</span>
+            <span>
+              <strong>{followUpJobs.length} job{followUpJobs.length > 1 ? 's' : ''}</strong> without news for 7+ days:&nbsp;
+              {followUpJobs.slice(0, 3).map((j, i) => (
+                <span key={j.id}>
+                  <button
+                    onClick={() => { setSelectedJob(j); fetchInterviews(j.id) }}
+                    className="underline hover:opacity-70 transition-opacity"
+                  >
+                    {j.company}
+                  </button>
+                  {i < Math.min(followUpJobs.length, 3) - 1 ? ', ' : ''}
+                </span>
+              ))}
+              {followUpJobs.length > 3 ? ` and ${followUpJobs.length - 3} more` : ''}
+            </span>
+          </div>
+          <button
+            onClick={() => setDismissFollowUp(true)}
+            className="shrink-0 hover:opacity-70 transition-opacity text-base"
+          >
+            ✕
+          </button>
+        </div>
+      )}
 
       {/* Dashboard stats */}
       <Dashboard jobs={jobs} />
