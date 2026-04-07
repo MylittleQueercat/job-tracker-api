@@ -11,9 +11,13 @@ export default function JobDrawer({
   confirmDeleteInterviewId, setConfirmDeleteInterviewId,
   onUpdateStatus, onSaveEdit, onDeleteJob,
   onAddInterview, onUpdateInterview, onDeleteInterview,
-  confirmDeleteId, setConfirmDeleteId
+  confirmDeleteId, setConfirmDeleteId,
+  onGenerateFollowUp
 }) {
   if (!selectedJob) return null
+
+  const [followUpEmail, setFollowUpEmail] = useState(null)
+  const [generatingEmail, setGeneratingEmail] = useState(false)
 
   return (
     <div className="fixed inset-0 z-50 flex justify-end">
@@ -90,6 +94,72 @@ export default function JobDrawer({
                   style={{ background: 'rgba(247,37,133,0.1)' }}>Delete</button>
               </div>
             </>
+          )}
+        </div>
+
+		{/* Follow-up email generator */}
+        <div className="rounded-xl p-4 flex flex-col gap-3" style={{ background: 'rgba(255,255,255,0.05)' }}>
+          <div className="flex justify-between items-center">
+            <h3 className="text-sm font-semibold">✉️ Follow-up Email</h3>
+            <div className="flex gap-2">
+              <button
+                onClick={async () => {
+                  setGeneratingEmail(true)
+                  const result = await onGenerateFollowUp(selectedJob, 'fr')
+                  if (result) setFollowUpEmail({ ...result, language: 'fr' })
+                  setGeneratingEmail(false)
+                }}
+                disabled={generatingEmail}
+                className="px-3 py-1 rounded-lg text-xs font-bold text-white disabled:opacity-40"
+                style={{ background: 'linear-gradient(90deg, #f72585, #7209b7)' }}
+              >
+                {generatingEmail ? '⏳ Generating...' : '✨ Generate'}
+              </button>
+            </div>
+          </div>
+
+          {followUpEmail && (
+            <div className="flex flex-col gap-3">
+              {/* Subject */}
+              <div>
+                <p className="text-gray-500 text-xs mb-1">Subject</p>
+                <p className="text-sm text-white bg-gray-800 rounded-lg px-3 py-2">{followUpEmail.subject}</p>
+              </div>
+              {/* Body */}
+              <div>
+                <p className="text-gray-500 text-xs mb-1">Body</p>
+                <p className="text-sm text-gray-300 bg-gray-800 rounded-lg px-3 py-2 whitespace-pre-line">{followUpEmail.body}</p>
+              </div>
+              {/* Actions */}
+              <div className="flex gap-2 justify-end">
+                {/* Switch language */}
+                <button
+                  onClick={async () => {
+                    const newLang = followUpEmail.language === 'fr' ? 'en' : 'fr'
+                    setGeneratingEmail(true)
+                    const result = await onGenerateFollowUp(selectedJob, newLang)
+                    if (result) setFollowUpEmail({ ...result, language: newLang })
+                    setGeneratingEmail(false)
+                  }}
+                  disabled={generatingEmail}
+                  className="px-3 py-1 rounded-lg text-xs text-gray-400 hover:text-white disabled:opacity-40"
+                  style={{ background: 'rgba(255,255,255,0.05)' }}
+                >
+                  {followUpEmail.language === 'fr' ? '🇬🇧 Switch to English' : '🇫🇷 Switch to French'}
+                </button>
+                {/* Copy */}
+                <button
+                  onClick={() => {
+                    navigator.clipboard.writeText(`Subject: ${followUpEmail.subject}\n\n${followUpEmail.body}`)
+                    alert('Copied!')
+                  }}
+                  className="px-3 py-1 rounded-lg text-xs text-white"
+                  style={{ background: 'rgba(76,201,240,0.15)', color: '#4cc9f0' }}
+                >
+                  📋 Copy
+                </button>
+              </div>
+            </div>
           )}
         </div>
 

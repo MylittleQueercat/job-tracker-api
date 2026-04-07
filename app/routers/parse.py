@@ -157,3 +157,67 @@ Return nothing else, no markdown, just the JSON.
         if "429" in error_msg or "quota" in error_msg.lower():
             raise HTTPException(status_code=429, detail="Daily AI quota exceeded.")
         raise HTTPException(status_code=500, detail=f"Email generation failed: {error_msg}")
+    
+    
+
+# Request schema for company brief generation
+class CompanyBriefRequest(BaseModel):
+    company: str
+    position: str
+
+# Response schema
+class CompanyBrief(BaseModel):
+    what_they_do: str
+    tech_stack: str
+    culture_questions: str
+    tips: str
+
+@router.post("/company-brief", response_model=CompanyBrief)
+async def generate_company_brief(
+    body: CompanyBriefRequest,
+    current_user=Depends(get_current_user)
+):
+    prompt = f"""
+You are an interview preparation assistant. Generate a concise company brief for a job interview.
+
+Company: {body.company}
+Position: {body.position}
+
+Return ONLY a valid JSON object with these exact keys: "what_they_do", "tech_stack", "culture_questions", "tips".
+- "what_they_do": 2-3 sentences about what the company does and their main product
+- "tech_stack": known or likely tech stack for this company and position (comma separated)
+- "culture_questions": 3 likely culture/behavioral interview questions, separated by " | "
+- "tips": 1-2 specific tips for interviewing at this company
+If the company is not well known, make reasonable inferences based on the position.
+Return nothing else, no markdown, just the JSON.
+"""
+
+    try:
+        client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
+        for attempt in range(2):
+            try:
+                response = client.models.generate_content(
+                    model="gemini-2.5-flash",
+                    contents=prompt
+                )
+                break
+            except Exception as e:
+                if attempt == 0 and "503" in str(e):
+                    await asyncio.sleep(2)
+                else:
+                    raise
+        raw = response.text.strip()
+        if raw.startswith("```"):
+            raw = raw.split("```")[1]
+            if raw.startswith("json"):
+                raw = raw[4:]
+        parsed = json.loads(raw)
+        return CompanyBrief(**parsed)
+
+    except json.JSONDecodeError:
+        raise HTTPException(status_code=422, detail="Could not parse Gemini response as JSON")
+    except Exception as e:
+        error_msg = str(e)
+        if "429" in error_msg or "quota" in error_msg.lower():
+            raise HTTPException(status_code=429, detail="Daily AI quota exceeded.")
+        raise HTTPException(status_code=500, detail=f"Brief generation failed: {error_msg}")

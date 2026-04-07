@@ -114,6 +114,31 @@ export default function App() {
     }
   }
 
+// ── Follow-up email generation ─────────────────────────────────────────────
+  async function handleGenerateFollowUp(job, language = 'fr') {
+    try {
+      const res = await authFetch(`${API}/api/generate-followup`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          company: job.company,
+          position: job.position,
+          created_at: job.created_at,
+          language
+        })
+      })
+      if (!res.ok) {
+        const err = await res.json()
+        showToast(err.detail || 'Generation failed')
+        return null
+      }
+      return await res.json()
+    } catch (err) {
+      showToast('Generation failed')
+      return null
+    }
+  }
+
   // ── Job CRUD ───────────────────────────────────────────────────────────────
   function handleAddJob() {
     setSubmitting(true)
@@ -379,6 +404,7 @@ export default function App() {
         confirmDeleteId={confirmDeleteId} setConfirmDeleteId={setConfirmDeleteId}
         onUpdateStatus={handleUpdateStatus} onSaveEdit={handleSaveEdit} onDeleteJob={handleDeleteJob}
         onAddInterview={handleAddInterview} onUpdateInterview={handleUpdateInterview} onDeleteInterview={handleDeleteInterview}
+        onGenerateFollowUp={handleGenerateFollowUp}
       />
 
       {/* Cat assistant — reacts to typing and job celebrations */}
