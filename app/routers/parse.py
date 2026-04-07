@@ -50,7 +50,7 @@ Job description:
         for attempt in range(2):
             try:
                 response = client.models.generate_content(
-                    model="gemini-2.5-flash",
+                    model="gemini-3.1-flash-lite",
                     contents=prompt
                 )
                 break
@@ -133,7 +133,7 @@ Return nothing else, no markdown, just the JSON.
         for attempt in range(2):
             try:
                 response = client.models.generate_content(
-                    model="gemini-2.5-flash",
+                    model="-flash",
                     contents=prompt
                 )
                 break
@@ -199,7 +199,7 @@ Return nothing else, no markdown, just the JSON.
         for attempt in range(2):
             try:
                 response = client.models.generate_content(
-                    model="gemini-2.5-flash",
+                    model="gemini-3.1-flash-lite",
                     contents=prompt
                 )
                 break
