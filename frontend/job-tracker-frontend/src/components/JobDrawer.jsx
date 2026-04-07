@@ -19,7 +19,9 @@ export default function JobDrawer({
 
   const [followUpEmail, setFollowUpEmail] = useState(null)
   const [generatingEmail, setGeneratingEmail] = useState(false)
-  const [companyBrief, setCompanyBrief] = useState(null)
+  const [companyBrief, setCompanyBrief] = useState(
+    selectedJob?.company_brief ? JSON.parse(selectedJob.company_brief) : null
+  )
   const [generatingBrief, setGeneratingBrief] = useState(false)
 
   return (
