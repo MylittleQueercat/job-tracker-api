@@ -12,12 +12,15 @@ export default function JobDrawer({
   onUpdateStatus, onSaveEdit, onDeleteJob,
   onAddInterview, onUpdateInterview, onDeleteInterview,
   confirmDeleteId, setConfirmDeleteId,
-  onGenerateFollowUp
+  onGenerateFollowUp,
+  onGenerateCompanyBrief
 }) {
   if (!selectedJob) return null
 
   const [followUpEmail, setFollowUpEmail] = useState(null)
   const [generatingEmail, setGeneratingEmail] = useState(false)
+  const [companyBrief, setCompanyBrief] = useState(null)
+  const [generatingBrief, setGeneratingBrief] = useState(false)
 
   return (
     <div className="fixed inset-0 z-50 flex justify-end">
@@ -100,7 +103,7 @@ export default function JobDrawer({
 		{/* Follow-up email generator */}
         <div className="rounded-xl p-4 flex flex-col gap-3" style={{ background: 'rgba(255,255,255,0.05)' }}>
           <div className="flex justify-between items-center">
-            <h3 className="text-sm font-semibold">✉️ Follow-up Email</h3>
+            <h3 className="text-sm font-semibold">Follow-up Email</h3>
             <div className="flex gap-2">
               <button
                 onClick={async () => {
@@ -113,7 +116,7 @@ export default function JobDrawer({
                 className="px-3 py-1 rounded-lg text-xs font-bold text-white disabled:opacity-40"
                 style={{ background: 'linear-gradient(90deg, #f72585, #7209b7)' }}
               >
-                {generatingEmail ? '⏳ Generating...' : '✨ Generate'}
+                {generatingEmail ? '⏳ Generating...' : 'Generate'}
               </button>
             </div>
           </div>
@@ -158,6 +161,51 @@ export default function JobDrawer({
                 >
                   📋 Copy
                 </button>
+              </div>
+            </div>
+          )}
+        </div>
+
+		{/* Company brief */}
+        <div className="rounded-xl p-4 flex flex-col gap-3" style={{ background: 'rgba(255,255,255,0.05)' }}>
+          <div className="flex justify-between items-center">
+            <h3 className="text-sm font-semibold">Company Brief</h3>
+            <button
+              onClick={async () => {
+                setGeneratingBrief(true)
+                const result = await onGenerateCompanyBrief(selectedJob)
+                if (result) setCompanyBrief(result)
+                setGeneratingBrief(false)
+              }}
+              disabled={generatingBrief}
+              className="px-3 py-1 rounded-lg text-xs font-bold text-white disabled:opacity-40"
+              style={{ background: 'linear-gradient(90deg, #f72585, #7209b7)' }}
+            >
+              {generatingBrief ? 'Generating...' : companyBrief ? 'Regenerate' : 'Generate'}
+            </button>
+          </div>
+
+          {companyBrief && (
+            <div className="flex flex-col gap-3 text-sm">
+              <div>
+                <p className="text-gray-500 text-xs mb-1">What they do</p>
+                <p className="text-gray-300">{companyBrief.what_they_do}</p>
+              </div>
+              <div>
+                <p className="text-gray-500 text-xs mb-1">Tech stack</p>
+                <p className="text-gray-300">{companyBrief.tech_stack}</p>
+              </div>
+              <div>
+                <p className="text-gray-500 text-xs mb-1">Culture questions to expect</p>
+                <ul className="flex flex-col gap-1">
+                  {companyBrief.culture_questions.split(' | ').map((q, i) => (
+                    <li key={i} className="text-gray-300">— {q}</li>
+                  ))}
+                </ul>
+              </div>
+              <div>
+                <p className="text-gray-500 text-xs mb-1">Tips</p>
+                <p className="text-gray-300">{companyBrief.tips}</p>
               </div>
             </div>
           )}

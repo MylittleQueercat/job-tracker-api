@@ -162,15 +162,17 @@ Return nothing else, no markdown, just the JSON.
 
 # Request schema for company brief generation
 class CompanyBriefRequest(BaseModel):
+    job_id: int
     company: str
     position: str
 
 # Response schema
 class CompanyBrief(BaseModel):
     what_they_do: str
-    tech_stack: str
-    culture_questions: str
-    tips: str
+    company_stage: str
+    likely_technical_topics: str
+    question_to_ask: str
+    market_position: str
 
 @router.post("/company-brief", response_model=CompanyBrief)
 async def generate_company_brief(
@@ -178,17 +180,17 @@ async def generate_company_brief(
     current_user=Depends(get_current_user)
 ):
     prompt = f"""
-You are an interview preparation assistant. Generate a concise company brief for a job interview.
+You are an interview preparation assistant for tech jobs in France. Generate a concise company brief.
 
 Company: {body.company}
 Position: {body.position}
 
-Return ONLY a valid JSON object with these exact keys: "what_they_do", "tech_stack", "culture_questions", "tips".
-- "what_they_do": 2-3 sentences about what the company does and their main product
-- "tech_stack": known or likely tech stack for this company and position (comma separated)
-- "culture_questions": 3 likely culture/behavioral interview questions, separated by " | "
-- "tips": 1-2 specific tips for interviewing at this company
-If the company is not well known, make reasonable inferences based on the position.
+Return ONLY a valid JSON object with these exact keys: "what_they_do", "company_stage", "likely_technical_topics", "question_to_ask", "market_position".
+- "what_they_do": 1-2 sentences, what the company does and their main product
+- "company_stage": one of "startup", "scale-up", "large company", "public company" + 1 sentence context
+- "likely_technical_topics": 3-4 likely technical interview topics for this position, separated by " | "
+- "question_to_ask": one smart question the candidate can ask the interviewer that shows preparation
+- "market_position": their position in the French market and 1-2 main competitors
 Return nothing else, no markdown, just the JSON.
 """
 
@@ -212,6 +214,18 @@ Return nothing else, no markdown, just the JSON.
             if raw.startswith("json"):
                 raw = raw[4:]
         parsed = json.loads(raw)
+        # Save brief to job in database
+        from app.database import SessionLocal
+        from app.models.job import Job
+        import json as json_module
+        db = SessionLocal()
+        try:
+            job = db.query(Job).filter(Job.id == body.job_id, Job.user_id == current_user.id).first()
+            if job:
+                job.company_brief = json_module.dumps(parsed)
+                db.commit()
+        finally:
+            db.close()
         return CompanyBrief(**parsed)
 
     except json.JSONDecodeError:

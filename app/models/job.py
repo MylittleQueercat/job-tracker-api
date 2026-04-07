@@ -16,6 +16,7 @@ class Job(Base):
     source = Column(String, nullable=True)    # LinkedIn / WttJ / direct
     deadline = Column(Date, nullable=True)
     notes = Column(String, nullable=True)
+    company_brief = Column(String, nullable=True)
     created_at = Column(DateTime, server_default=func.now())
 
     interviews = relationship("Interview", back_populates="job", cascade="all, delete")

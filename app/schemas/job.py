@@ -47,6 +47,7 @@ class JobUpdate(BaseModel):
     source: Optional[str] = None
     deadline: Optional[date_type] = None
     notes: Optional[str] = None
+    company_brief: Optional[str] = None
 
     @field_validator("status")
     @classmethod
@@ -66,6 +67,7 @@ class JobResponse(BaseModel):
     source: Optional[str]
     deadline: Optional[date_type]
     notes: Optional[str]
+    company_brief: Optional[str] = None
     created_at: datetime
     interviews: list[InterviewResponse] = []
     

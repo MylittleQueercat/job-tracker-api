@@ -139,6 +139,29 @@ export default function App() {
     }
   }
 
+// ── Company brief generation ───────────────────────────────────────────────
+  async function handleGenerateCompanyBrief(job) {
+    try {
+      const res = await authFetch(`${API}/api/company-brief`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          company: job.company,
+          position: job.position
+        })
+      })
+      if (!res.ok) {
+        const err = await res.json()
+        showToast(err.detail || 'Generation failed')
+        return null
+      }
+      return await res.json()
+    } catch (err) {
+      showToast('Generation failed')
+      return null
+    }
+  }
+
   // ── Job CRUD ───────────────────────────────────────────────────────────────
   function handleAddJob() {
     setSubmitting(true)
@@ -405,6 +428,7 @@ export default function App() {
         onUpdateStatus={handleUpdateStatus} onSaveEdit={handleSaveEdit} onDeleteJob={handleDeleteJob}
         onAddInterview={handleAddInterview} onUpdateInterview={handleUpdateInterview} onDeleteInterview={handleDeleteInterview}
         onGenerateFollowUp={handleGenerateFollowUp}
+        onGenerateCompanyBrief={handleGenerateCompanyBrief}
       />
 
       {/* Cat assistant — reacts to typing and job celebrations */}
