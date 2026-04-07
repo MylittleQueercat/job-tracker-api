@@ -9,4 +9,4 @@ python-multipart
 python-dotenv
 pytest
 httpx
-google-generativeai
+google-genai
