@@ -21,7 +21,10 @@ export default function App() {
 
   // ── Add job form state ─────────────────────────────────────────────────────
   const [showForm, setShowForm] = useState(false)
-  const [newJob, setNewJob] = useState({ company: '', position: '', status: 'applied', location: '', source: '', job_type: '' })
+  const [newJob, setNewJob] = useState(() => {
+    const draft = localStorage.getItem('jobDraft')
+    return draft ? JSON.parse(draft) : { company: '', position: '', status: 'applied', location: '', source: '', job_type: '' }
+  })
   const [submitting, setSubmitting] = useState(false)
 
   // ── Auth state ─────────────────────────────────────────────────────────────
@@ -51,7 +54,10 @@ export default function App() {
 
   // ── Interview state ────────────────────────────────────────────────────────
   const [interviews, setInterviews] = useState([])
-  const [newInterview, setNewInterview] = useState({ round: 1, interview_type: '', date: '', notes: '' })
+  const [newInterview, setNewInterview] = useState(() => {
+    const draft = localStorage.getItem('interviewDraft')
+    return draft ? JSON.parse(draft) : { round: 1, interview_type: '', date: '', notes: '' }
+  })
   const [editingInterviewId, setEditingInterviewId] = useState(null)
   const [editInterviewData, setEditInterviewData] = useState({})
   const [confirmDeleteInterviewId, setConfirmDeleteInterviewId] = useState(null)
@@ -78,6 +84,14 @@ export default function App() {
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [])
 
+  useEffect(() => {
+    localStorage.setItem('jobDraft', JSON.stringify(newJob))
+  }, [newJob])
+
+  useEffect(() => {
+  localStorage.setItem('interviewDraft', JSON.stringify(newInterview))
+}, [newInterview])
+
   // Fetch jobs when filter or token changes
   useEffect(() => {
     if (!token) return
@@ -91,6 +105,10 @@ export default function App() {
       })
       .catch(err => { setError(err.message); setLoading(false); setFetching(false) })
   }, [filter, token])
+
+  useEffect(() => {
+    localStorage.setItem('jobDraft', JSON.stringify(newJob))
+  }, [newJob])
 
   // ── Auth helpers ───────────────────────────────────────────────────────────
 
@@ -277,6 +295,11 @@ export default function App() {
   }
 
   function handleUpdateStatus(id, status) {
+    const previous = jobs.find(j => j.id === id)?.status
+
+    setJobs(prev => prev.map(j => j.id === id ? { ...j, status } : j))
+    if (status === 'offer') celebrate()
+
     authFetch(`${API}/jobs/${id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
@@ -285,10 +308,12 @@ export default function App() {
       .then(res => res.json())
       .then(updated => {
         if (!updated.id) return
-        if (updated.status === 'offer') celebrate()
         setJobs(prev => prev.map(j => j.id === id ? updated : j))
       })
-      .catch(err => setError(err.message))
+      .catch(err => {
+        setJobs(prev => prev.map(j => j.id === id ? { ...j, status: previous } : j))
+        setError(err.message)
+      })
   }
 
   function handleDeleteJob(id) {
@@ -335,6 +360,7 @@ export default function App() {
       .then(data => {
         setInterviews(prev => [...prev, data])
         setNewInterview({ round: interviews.length + 2, interview_type: '', date: '', notes: '' })
+        localStorage.removeItem('interviewDraft')
         showToast('Interview added!')
       })
       .catch(err => setError(err.message))

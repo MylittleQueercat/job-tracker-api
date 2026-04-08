@@ -239,6 +239,11 @@ export default function JobList({
               <div>
                 <h2 className="text-xl font-semibold">{highlight(job.company, search)}</h2>
                 <p className="text-gray-400">{highlight(job.position, search)}</p>
+                {job.interviews && job.interviews.length > 0 && (
+                  <span className="text-xs text-gray-600 mt-1 block">
+                    {job.interviews.length} interview{job.interviews.length > 1 ? 's' : ''}
+                  </span>
+                )}
                 <div className="flex items-center gap-2 mt-1">
                   <p className="text-gray-600 text-xs">
                     {new Date(job.created_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}

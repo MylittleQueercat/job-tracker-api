@@ -8,6 +8,7 @@ export default function LoginForm({ onLogin }) {
   const [password, setPassword] = useState('')
   const [isRegistering, setIsRegistering] = useState(false)
   const [error, setError] = useState(null)
+  const [loading, setLoading] = useState(false)
 
   function handleRegister() {
     fetch(`${API}/register`, {
@@ -28,6 +29,8 @@ export default function LoginForm({ onLogin }) {
   }
 
   function handleLogin() {
+    setLoading(true)
+    setError(null)
     const form = new URLSearchParams()
     form.append('username', username)
     form.append('password', password)
@@ -48,6 +51,7 @@ export default function LoginForm({ onLogin }) {
         onLogin(t)
       })
       .catch(err => setError(err.message))
+      .finally(() => setLoading(false))
   }
 
   return (
@@ -80,9 +84,20 @@ export default function LoginForm({ onLogin }) {
 
         <button
           onClick={isRegistering ? handleRegister : handleLogin}
-          className="bg-blue-600 hover:bg-blue-500 rounded-lg py-2 font-medium"
+          disabled={loading}
+          className="bg-blue-600 hover:bg-blue-500 rounded-lg py-2 font-medium disabled:opacity-50"
         >
-          {isRegistering ? 'Register' : 'Login'}
+          {loading ? (
+            <span className="flex items-center justify-center gap-2">
+              <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
+              </svg>
+              {isRegistering ? 'Registering...' : 'Logging in...'}
+            </span>
+          ) : (
+            isRegistering ? 'Register' : 'Login'
+          )}
         </button>
         <button
           onClick={() => { setIsRegistering(prev => !prev); setError(null) }}

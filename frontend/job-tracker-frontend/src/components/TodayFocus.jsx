@@ -32,6 +32,22 @@ export default function TodayFocus({ jobs, onSelectJob, fetchInterviews }) {
     return daysSince >= threshold
   }).slice(0, 3)
 
+  // 📅 Upcoming interviews: interviews with a future date within 7 days
+  const upcomingInterviews = []
+  jobs.forEach(job => {
+    if (job.interviews && job.interviews.length > 0) {
+      job.interviews.forEach(iv => {
+        if (!iv.date) return
+        const interviewDate = new Date(iv.date)
+        const daysUntil = (interviewDate - now) / (1000 * 60 * 60 * 24)
+        if (daysUntil >= 0 && daysUntil <= 7) {
+          upcomingInterviews.push({ ...iv, job })
+        }
+      })
+    }
+  })
+  upcomingInterviews.sort((a, b) => new Date(a.date) - new Date(b.date))
+
   // 💀 Dead zone: no activity for 45+ days (except offer/rejected)
   const deadZone = jobs.filter(job => {
     if (['offer', 'rejected'].includes(job.status)) return false
@@ -46,7 +62,7 @@ export default function TodayFocus({ jobs, onSelectJob, fetchInterviews }) {
   const appliedThisWeek = jobs.filter(job => new Date(job.created_at) >= startOfWeek).length
   const noActivityThisWeek = appliedThisWeek === 0
 
-  const totalItems = actionNeeded.length + followUp.length + deadZone.length + (noActivityThisWeek ? 1 : 0)
+  const totalItems = actionNeeded.length + followUp.length + upcomingInterviews.length + deadZone.length + (noActivityThisWeek ? 1 : 0)
   if (totalItems === 0) return (
     <div className="rounded-2xl p-6 mb-8 flex items-center gap-4"
       style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)' }}>
@@ -100,6 +116,41 @@ export default function TodayFocus({ jobs, onSelectJob, fetchInterviews }) {
                 ) : (
                   <p className="text-xs font-bold text-[#f72585] uppercase tracking-wide">{job.status.replace('_', ' ')}</p>
                 )}
+              </div>
+            </button>
+          )
+        })}
+
+        {/* 📅 Upcoming interviews */}
+        {upcomingInterviews.map(iv => {
+          const interviewDate = new Date(iv.date)
+          const daysUntil = Math.ceil((interviewDate - now) / (1000 * 60 * 60 * 24))
+          return (
+            <button
+              key={iv.id}
+              onClick={() => { onSelectJob(iv.job); fetchInterviews(iv.job.id) }}
+              className="flex items-center gap-4 p-4 rounded-xl text-left transition-all hover:bg-white/[0.04]"
+              style={{
+                border: `1px solid ${daysUntil <= 1 ? 'rgba(247,37,133,0.3)' : 'rgba(124,58,237,0.3)'}`,
+                background: `${daysUntil <= 1 ? 'rgba(247,37,133,0.05)' : 'rgba(124,58,237,0.05)'}`
+              }}
+            >
+              <div className="w-2 h-2 rounded-full shrink-0"
+                style={{ background: daysUntil <= 1 ? '#f72585' : '#7c3aed', boxShadow: `0 0 8px ${daysUntil <= 1 ? '#f72585' : '#7c3aed'}` }}
+              ></div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-white truncate">{iv.job.company}</p>
+                <p className="text-xs text-gray-500 truncate">
+                  {iv.interview_type || 'Interview'} {iv.round ? `· Round ${iv.round}` : ''}
+                </p>
+              </div>
+              <div className="shrink-0 text-right">
+                <p className="text-xs font-bold" style={{ color: daysUntil <= 1 ? '#f72585' : '#a78bfa' }}>
+                  {daysUntil === 0 ? 'Today' : daysUntil === 1 ? 'Tomorrow' : `In ${daysUntil} days`}
+                </p>
+                <p className="text-xs text-gray-600">
+                  {interviewDate.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}
+                </p>
               </div>
             </button>
           )
