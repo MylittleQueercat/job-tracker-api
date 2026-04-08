@@ -6,8 +6,9 @@ import TodayFocus from './components/TodayFocus'
 import JobList from './components/JobList'
 import JobDrawer from './components/JobDrawer'
 import CatAssistant from './CatAssistant'
-import { MOTIVATIONS } from './constants'
 import * as XLSX from 'xlsx'
+import { STATUSES, STATUS_COLORS, STATUS_CHART_COLORS, MOTIVATIONS, ACHIEVEMENTS } from './constants'
+import Achievements from './components/Achievements'
 
 const API = 'https://job-tracker-8xwj.onrender.com'
 
@@ -40,6 +41,7 @@ export default function App() {
   const [language, setLanguage] = useState(localStorage.getItem('language') || 'fr')
   const [showUserMenu, setShowUserMenu] = useState(false)
   const [showExportMenu, setShowExportMenu] = useState(false)
+  const [page, setPage] = useState('home')
 
   function switchLanguage(lang) {
     setLanguage(lang)
@@ -61,6 +63,24 @@ export default function App() {
   const [editingInterviewId, setEditingInterviewId] = useState(null)
   const [editInterviewData, setEditInterviewData] = useState({})
   const [confirmDeleteInterviewId, setConfirmDeleteInterviewId] = useState(null)
+
+  // ── Loading state ────────────────────────────────────────────────────────
+  const [parsingJD, setParsingJD] = useState(false)
+  const [generatingFollowup, setGeneratingFollowup] = useState(false)
+  const [generatingBrief, setGeneratingBrief] = useState(false)
+
+  // ── Achievement state ────────────────────────────────────────────────────────
+  const [unlockedAchievements, setUnlockedAchievements] = useState(() => {
+    const saved = localStorage.getItem('achievements')
+    return saved ? JSON.parse(saved) : {}
+  })
+  const [aiUsageCount, setAiUsageCount] = useState(() => parseInt(localStorage.getItem('aiUsageCount') || '0'))
+  const [editCounts, setEditCounts] = useState(() => {
+    const saved = localStorage.getItem('editCounts')
+    return saved ? JSON.parse(saved) : {}
+  })
+  const [lastActiveDate, setLastActiveDate] = useState(() => localStorage.getItem('lastActiveDate') || null)
+  const [newlyUnlocked, setNewlyUnlocked] = useState([])
   
 // ── Keyboard shortcuts ─────────────────────────────────────────────────────
   useEffect(() => {
@@ -102,6 +122,7 @@ export default function App() {
       .then(data => {
         if (!Array.isArray(data)) { setError('Failed to load jobs'); return }
         setJobs(data); setLoading(false); setFetching(false)
+        checkAchievements(data, interviews.length)
       })
       .catch(err => { setError(err.message); setLoading(false); setFetching(false) })
   }, [filter, token])
@@ -140,11 +161,14 @@ export default function App() {
 
   // ── Confetti for offer ─────────────────────────────────────────────────────
   function celebrate() {
+    console.log('celebrate called, triggering cat')
     confetti({ particleCount: 150, spread: 80, origin: { y: 0.6 }, colors: ['#f72585', '#7209b7', '#4cc9f0', '#ffffff'] })
+    triggerCatCelebration()
   }
 
   // ── JD parsing ─────────────────────────────────────────────────────────────
   async function handleParseJD(text) {
+    setParsingJD(true)
     try {
       const res = await authFetch(`${API}/api/parse-jd`, {
         method: 'POST',
@@ -161,11 +185,14 @@ export default function App() {
     } catch (err) {
       showToast('Parsing failed')
       return null
+    } finally {
+      setParsingJD(false)
     }
   }
 
 // ── Follow-up email generation ─────────────────────────────────────────────
   async function handleGenerateFollowUp(job, language = 'fr') {
+    setGeneratingFollowup(true)
     try {
       const res = await authFetch(`${API}/api/generate-followup`, {
         method: 'POST',
@@ -186,11 +213,14 @@ export default function App() {
     } catch (err) {
       showToast('Generation failed')
       return null
+    } finally {
+      setGeneratingFollowup(false)
     }
   }
 
 // ── Company brief generation ───────────────────────────────────────────────
   async function handleGenerateCompanyBrief(job) {
+    setGeneratingBrief(true)
     try {
       console.log('generating brief with language:', language)
       const res = await authFetch(`${API}/api/company-brief`, {
@@ -215,7 +245,74 @@ export default function App() {
     } catch (err) {
       showToast('Generation failed')
       return null
+    } finally {
+      setGeneratingBrief(false)
     }
+  }
+
+  function checkAchievements(currentJobs, currentTotalInterviews) {
+    const now = Date.now()
+    const firstJobDate = currentJobs.length > 0
+      ? Math.min(...currentJobs.map(j => new Date(j.created_at).getTime()))
+      : now
+    const accountAgeDays = Math.floor((now - firstJobDate) / 86400000)
+
+    // streak计算
+    const activityDates = new Set(currentJobs.map(j => j.created_at?.slice(0, 10)))
+    let streakDays = 0
+    let d = new Date()
+    while (true) {
+      const key = d.toISOString().slice(0, 10)
+      if (activityDates.has(key)) {
+        streakDays++
+        d.setDate(d.getDate() - 1)
+      } else break
+    }
+
+    // gap计算（消失14天后回来）
+    const lastActive = localStorage.getItem('lastActiveDate')
+    const today = new Date().toISOString().slice(0, 10)
+    const gapDays = lastActive ? Math.floor((now - new Date(lastActive).getTime()) / 86400000) : 0
+    localStorage.setItem('lastActiveDate', today)
+
+    const context = {
+      jobs: currentJobs,
+      totalInterviews: currentTotalInterviews,
+      accountAgeDays,
+      streakDays,
+      gapDays,
+      aiUsageCount,
+      editCounts,
+      deletedOffers: parseInt(localStorage.getItem('deletedOffers') || '0')
+    }
+
+    const newlyUnlockedList = []
+    const updated = { ...unlockedAchievements }
+
+    ACHIEVEMENTS.forEach(ach => {
+      if (!updated[ach.id]) {
+        try {
+          if (ach.check(context)) {
+            updated[ach.id] = new Date().toISOString()
+            newlyUnlockedList.push(ach)
+          }
+        } catch (e) {}
+      }
+    })
+
+    if (newlyUnlockedList.length > 0) {
+      setUnlockedAchievements(updated)
+      localStorage.setItem('achievements', JSON.stringify(updated))
+      setNewlyUnlocked(newlyUnlockedList)
+      newlyUnlockedList.forEach(ach => showToast(`🏆 Achievement unlocked: ${ach.name}`))
+      triggerCatCelebration()
+    }
+  }
+
+// ── Cat Celebration ─────────────────────────────────────────────────────────────
+  function triggerCatCelebration() {
+    setIsCelebrating(true)
+    setTimeout(() => setIsCelebrating(false), 3000)
   }
 
 // ── Export CSV ─────────────────────────────────────────────────────────────
@@ -295,6 +392,7 @@ export default function App() {
   }
 
   function handleUpdateStatus(id, status) {
+    console.log('status received:', status)
     const previous = jobs.find(j => j.id === id)?.status
 
     setJobs(prev => prev.map(j => j.id === id ? { ...j, status } : j))
@@ -510,29 +608,47 @@ export default function App() {
         </div>
       )}
 
-      {/* Dashboard stats */}
-      <Dashboard jobs={jobs} />
+      <div className="flex gap-3 mb-6">
+        <button
+          onClick={() => setPage('home')}
+          className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${page === 'home' ? 'bg-white/10 text-white' : 'text-gray-500 hover:text-white'}`}
+        >
+          Home 🏠
+        </button>
+        <button
+          onClick={() => setPage('achievements')}
+          className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${page === 'achievements' ? 'bg-white/10 text-white' : 'text-gray-500 hover:text-white'}`}
+        >
+          Achievements 🏆
+        </button>
+      </div>
 
-      {/* Today's focus — priority actions */}
-      <TodayFocus
-        jobs={jobs}
-        onSelectJob={setSelectedJob}
-        fetchInterviews={fetchInterviews}
-      />
+      {page === 'home' && (
+        <>
+          <Dashboard jobs={jobs} />
+          <TodayFocus
+            jobs={jobs}
+            onSelectJob={setSelectedJob}
+            fetchInterviews={fetchInterviews}
+          />
+          <JobList
+            jobs={jobs} fetching={fetching}
+            filter={filter} setFilter={setFilter}
+            onSelectJob={job => { setSelectedJob(job); fetchInterviews(job.id) }}
+            onUpdateStatus={handleUpdateStatus}
+            onDeleteJob={handleDeleteJob}
+            newJob={newJob} setNewJob={setNewJob}
+            onAddJob={handleAddJob} submitting={submitting}
+            showForm={showForm} setShowForm={setShowForm}
+            onTyping={setIsTyping}
+            onParseJD={handleParseJD}
+          />
+        </>
+      )}
 
-      {/* Job list with search, filters and cards */}
-      <JobList
-        jobs={jobs} fetching={fetching}
-        filter={filter} setFilter={setFilter}
-        onSelectJob={job => { setSelectedJob(job); fetchInterviews(job.id) }}
-        onUpdateStatus={handleUpdateStatus}
-        onDeleteJob={handleDeleteJob}
-        newJob={newJob} setNewJob={setNewJob}
-        onAddJob={handleAddJob} submitting={submitting}
-        showForm={showForm} setShowForm={setShowForm}
-        onTyping={setIsTyping}
-        onParseJD={handleParseJD}
-      />
+      {page === 'achievements' && (
+        <Achievements unlockedAchievements={unlockedAchievements} />
+      )}
 
       {/* Footer */}
       <div className="h-64"></div>
@@ -608,6 +724,9 @@ export default function App() {
         onAddInterview={handleAddInterview} onUpdateInterview={handleUpdateInterview} onDeleteInterview={handleDeleteInterview}
         onGenerateFollowUp={(job, lang) => handleGenerateFollowUp(job, lang || language)}
         onGenerateCompanyBrief={handleGenerateCompanyBrief}
+        parsingJD={parsingJD}
+        generatingFollowup={generatingFollowup}
+        generatingBrief={generatingBrief}
       />
 
       {/* Cat assistant — reacts to typing and job celebrations */}
