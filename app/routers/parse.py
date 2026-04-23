@@ -6,6 +6,29 @@ from google import genai
 from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
 from app.routers.jobs import get_current_user
+import re
+
+def extract_json(text: str) -> dict:
+    """Robustly extract JSON from Gemini response"""
+    text = text.strip()
+    # Try direct parse first
+    try:
+        return json.loads(text)
+    except json.JSONDecodeError:
+        pass
+    # Strip markdown fences
+    text = re.sub(r'^```json\s*', '', text)
+    text = re.sub(r'^```\s*', '', text)
+    text = re.sub(r'\s*```$', '', text)
+    try:
+        return json.loads(text.strip())
+    except json.JSONDecodeError:
+        pass
+    # Find first { } block
+    match = re.search(r'\{.*\}', text, re.DOTALL)
+    if match:
+        return json.loads(match.group())
+    raise json.JSONDecodeError("No JSON found", text, 0)
 
 router = APIRouter()
 
@@ -60,15 +83,8 @@ Job description:
                     await asyncio.sleep(2)
                 else:
                     raise
-        raw = response.text.strip()
-
-        # Strip markdown code fences if present
-        if raw.startswith("```"):
-            raw = raw.split("```")[1]
-            if raw.startswith("json"):
-                raw = raw[4:]
-
-        parsed = json.loads(raw)
+        parsed = extract_json(response.text)
+                
         return ParsedJob(**parsed)
 
     except json.JSONDecodeError:
@@ -142,12 +158,7 @@ Return nothing else, no markdown, just the JSON.
                     await asyncio.sleep(2)
                 else:
                     raise
-        raw = response.text.strip()
-        if raw.startswith("```"):
-            raw = raw.split("```")[1]
-            if raw.startswith("json"):
-                raw = raw[4:]
-        parsed = json.loads(raw)
+        parsed = extract_json(response.text)
         return FollowUpEmail(**parsed)
 
     except json.JSONDecodeError:
@@ -240,12 +251,7 @@ Ne retourne rien d'autre, pas de markdown, juste le JSON.
                     await asyncio.sleep(2)
                 else:
                     raise
-        raw = response.text.strip()
-        if raw.startswith("```"):
-            raw = raw.split("```")[1]
-            if raw.startswith("json"):
-                raw = raw[4:]
-        parsed = json.loads(raw)
+        parsed = extract_json(response.text)
         # Save brief to job in database
         from app.database import SessionLocal
         from app.models.job import Job

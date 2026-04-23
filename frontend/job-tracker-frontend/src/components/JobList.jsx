@@ -33,10 +33,29 @@ export default function JobList({
     typingTimeoutRef.current = setTimeout(() => onTyping(false), 2000)
   }
 
-  const filteredJobs = jobs.filter(job =>
-    job.company.toLowerCase().includes(search.toLowerCase()) ||
-    job.position.toLowerCase().includes(search.toLowerCase())
-  )
+  const STATUS_PRIORITY = {
+    final_interview: 0,
+    interview: 1,
+    technical_test: 2,
+    phone_screen: 3,
+    applied: 4,
+    no_response: 5,
+    withdrew: 6,
+    offer: 7,
+    rejected: 8,
+  }
+
+  const filteredJobs = jobs
+    .filter(job =>
+      job.company.toLowerCase().includes(search.toLowerCase()) ||
+      job.position.toLowerCase().includes(search.toLowerCase())
+    )
+    .sort((a, b) => {
+      const pa = STATUS_PRIORITY[a.status] ?? 9
+      const pb = STATUS_PRIORITY[b.status] ?? 9
+      if (pa !== pb) return pa - pb
+      return new Date(b.updated_at) - new Date(a.updated_at)
+    })
 
   return (
     <>

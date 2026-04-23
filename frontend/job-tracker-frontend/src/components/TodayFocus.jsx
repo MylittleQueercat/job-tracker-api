@@ -1,40 +1,9 @@
 import { STATUS_LABELS } from '../constants'
-
 // TodayFocus component — shows the 3 most important actions for today
 export default function TodayFocus({ jobs, onSelectJob, fetchInterviews }) {
   const now = Date.now()
 
-  // 🔴 Action needed: deadline in 3 days, or technical_test/interview with no interviews recorded
-  const actionNeeded = jobs.filter(job => {
-    if (job.deadline) {
-      const daysUntil = (new Date(job.deadline) - now) / (1000 * 60 * 60 * 24)
-      if (daysUntil <= 3 && daysUntil >= 0) return true
-    }
-    if (['technical_test', 'interview', 'final_interview'].includes(job.status)) {
-      return true
-    }
-    return false
-  }).slice(0, 3)
-
-// Thresholds based on French job market rhythm
-	const FOLLOWUP_THRESHOLDS = {
-		applied: 14,
-		phone_screen: 7,
-		technical_test: 5,
-		interview: 7,
-		final_interview: 5,
-		no_response: 14,
-	}
-
-  // 🟡 Follow up: based on status-specific thresholds
-  const followUp = jobs.filter(job => {
-    const threshold = FOLLOWUP_THRESHOLDS[job.status]
-    if (!threshold) return false
-    const daysSince = (now - new Date(job.updated_at || job.created_at)) / (1000 * 60 * 60 * 24)
-    return daysSince >= threshold
-  }).slice(0, 3)
-
-  // 📅 Upcoming interviews: interviews with a future date within 7 days
+  // 📅 Upcoming interviews — 先算这个
   const upcomingInterviews = []
   jobs.forEach(job => {
     if (job.interviews && job.interviews.length > 0) {
@@ -49,6 +18,38 @@ export default function TodayFocus({ jobs, onSelectJob, fetchInterviews }) {
     }
   })
   upcomingInterviews.sort((a, b) => new Date(a.date) - new Date(b.date))
+  const upcomingJobIds = new Set(upcomingInterviews.map(iv => iv.job.id))
+
+  // 🔴 Action needed — 排除已在upcomingInterviews里的
+  const actionNeeded = jobs.filter(job => {
+    if (upcomingJobIds.has(job.id)) return false
+    if (job.deadline) {
+      const daysUntil = (new Date(job.deadline) - now) / (1000 * 60 * 60 * 24)
+      if (daysUntil <= 3 && daysUntil >= 0) return true
+    }
+    if (['technical_test', 'interview', 'final_interview'].includes(job.status)) {
+      return true
+    }
+    return false
+  }).slice(0, 3)
+
+  // Thresholds based on French job market rhythm
+  const FOLLOWUP_THRESHOLDS = {
+    applied: 14,
+    phone_screen: 7,
+    technical_test: 5,
+    interview: 7,
+    final_interview: 5,
+    no_response: 14,
+  }
+
+  // 🟡 Follow up
+  const followUp = jobs.filter(job => {
+    const threshold = FOLLOWUP_THRESHOLDS[job.status]
+    if (!threshold) return false
+    const daysSince = (now - new Date(job.updated_at || job.created_at)) / (1000 * 60 * 60 * 24)
+    return daysSince >= threshold
+  }).slice(0, 3)
 
   // 💀 Dead zone: no activity for 45+ days (except offer/rejected)
   const deadZone = jobs.filter(job => {

@@ -5,7 +5,16 @@ export default function Achievements({ unlockedAchievements }) {
   const unlocked = Object.keys(unlockedAchievements).length
   const percent = Math.round(unlocked / total * 100)
 
-  const visible = ACHIEVEMENTS.filter(a => !a.hidden || unlockedAchievements[a.id])
+  const visible = ACHIEVEMENTS
+  .filter(a => !a.hidden || unlockedAchievements[a.id])
+  .sort((a, b) => {
+    const aDate = unlockedAchievements[a.id] ? new Date(unlockedAchievements[a.id]) : null
+    const bDate = unlockedAchievements[b.id] ? new Date(unlockedAchievements[b.id]) : null
+    if (aDate && bDate) return bDate - aDate
+    if (aDate) return -1
+    if (bDate) return 1
+    return 0
+  })
   const hidden = ACHIEVEMENTS.filter(a => a.hidden && !unlockedAchievements[a.id])
 
   return (

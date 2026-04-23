@@ -25,7 +25,7 @@ export const STATUS_COLORS = {
   final_interview: 'bg-pink-500/20 text-pink-400',
   offer: 'bg-green-500/20 text-green-400',
   withdrew: 'bg-orange-500/20 text-orange-400',
-  rejected: 'bg-red-500/20 text-red-400',
+  rejected: 'bg-gray-500/20 text-gray-400',
   no_response: 'bg-gray-500/20 text-gray-400',
 }
 
@@ -38,7 +38,7 @@ export const STATUS_CHART_COLORS = {
   final_interview: '#ec4899',
   offer: '#22c55e',
   withdrew: '#f97316',
-  rejected: '#ef4444',
+  rejected: '#4b5563',
   no_response: '#6b7280',
 }
 
@@ -62,12 +62,15 @@ export const ACHIEVEMENTS = [
   { id: 'viva_la_vida', name: 'Viva la vida (loca, applying)', desc: '100 applications. The market fears you.', icon: '🎸', check: ({ jobs }) => jobs.length >= 100 },
   { id: 'open_aggressively', name: 'Open to work (aggressively)', desc: 'Add 5 jobs in a single day.', icon: '⚡', check: ({ jobs }) => { const counts = {}; jobs.forEach(j => { const d = j.created_at?.slice(0,10); counts[d] = (counts[d]||0)+1 }); return Object.values(counts).some(v => v >= 5) } },
   { id: 'citizen_world', name: 'Citizen of the world', desc: 'Apply in 3 different cities.', icon: '🌍', check: ({ jobs }) => new Set(jobs.map(j => j.location).filter(Boolean)).size >= 3 },
+  { id: 'survivor', name: 'Survivor', desc: '30 days in and still standing. Destiny\'s Child approves.', icon: '🦺', check: ({ accountAgeDays }) => accountAgeDays >= 30 },
+  { id: 'paris_je_taime', name: 'Paris, je t\'aime', desc: '3 applications in Paris. The city of lights and CDIs.', icon: '🇫🇷', check: ({ jobs }) => jobs.filter(j => (j.location||'').toLowerCase().includes('paris')).length >= 3 },
 
   // 面试
   { id: 'they_called', name: 'They called. You answered.', desc: 'First phone screen.', icon: '📞', check: ({ jobs }) => jobs.some(j => ['phone_screen','technical_test','interview','final_interview','offer'].includes(j.status)) },
   { id: 'big_brain', name: 'Big brain time', desc: 'Your leetcode grind was not in vain.', icon: '🧠', check: ({ jobs }) => jobs.some(j => ['technical_test','interview','final_interview','offer'].includes(j.status)) },
   { id: 'veteran', name: 'Veteran of the culture wars', desc: 'Log 10 interview records total.', icon: '🥋', check: ({ totalInterviews }) => totalInterviews >= 10 },
   { id: 'final_countdown', name: 'This is the final countdown', desc: 'Reach final interview stage.', icon: '🏟️', check: ({ jobs }) => jobs.some(j => j.status === 'final_interview') },
+  { id: 'notes_connoisseur', name: 'Notes connoisseur', desc: '5 jobs all with notes filled in. Details matter.', icon: '📝', check: ({ jobs }) => jobs.filter(j => (j.notes||'').length > 0).length >= 5 },
 
   // 拒信
   { id: 'not_you', name: 'It\'s not you, it\'s them', desc: 'First rejection. Welcome to the club.', icon: '💔', check: ({ jobs }) => jobs.some(j => j.status === 'rejected') },
@@ -79,7 +82,8 @@ export const ACHIEVEMENTS = [
   // 终极
   { id: 'room_of_own', name: 'A room of one\'s own (with a salary)', desc: 'First offer. Virginia Woolf approves.', icon: '🏠', check: ({ jobs }) => jobs.some(j => j.status === 'offer') },
   { id: 'power_move', name: 'Power move', desc: 'Two offers at the same time.', icon: '😎', check: ({ jobs }) => jobs.filter(j => j.status === 'offer').length >= 2 },
-  { id: 'good_luck_babe', name: 'Good luck, babe (to that company)', desc: 'Reject an offer. Chappell Roan approves.', icon: '🫧', check: ({ deletedOffers }) => deletedOffers >= 1 },
+  { id: 'good_luck_babe', name: 'Good luck, babe (to that company)', desc: 'Withdrew from an offer. Chappell Roan approves.', icon: '🫧', check: ({ jobs }) => jobs.some(j => j.status === 'withdrew') },
+  { id: 'quick_offer', name: 'Speedrun any%', desc: 'Get an offer within 14 days of applying. World record pace.', icon: '⚡', check: ({ jobs }) => jobs.some(j => j.status === 'offer' && (new Date(j.updated_at) - new Date(j.created_at)) < 14*86400000) },
   { id: 'bohemian_rhapsody', name: 'Bohemian Rhapsody of a job search', desc: 'Experienced apply, reject, interview and offer. The full circle.', icon: '🎭', check: ({ jobs }) => { const statuses = new Set(jobs.map(j => j.status)); return ['applied','rejected','interview','offer'].every(s => statuses.has(s)) } },
 
   // 留存
@@ -95,5 +99,7 @@ export const ACHIEVEMENTS = [
   { id: 'buddhist', name: 'Buddhist job seeker', desc: 'Only 1 application in 30 days. Detachment is valid.', icon: '🧘', hidden: true, check: ({ jobs }) => { const month = jobs.filter(j => (Date.now()-new Date(j.created_at)) < 30*86400000); return month.length === 1 } },
   { id: 'overthinking', name: 'Overthinking as a service', desc: 'Edit the same job 10+ times.', icon: '✏️', hidden: true, check: ({ editCounts }) => Object.values(editCounts||{}).some(v => v >= 10) },
   { id: 'life_on_mars', name: 'Life on Mars (is easier than this job market)', desc: 'Still going after 30 days.', icon: '🚀', hidden: true, check: ({ accountAgeDays }) => accountAgeDays >= 30 },
+  { id: 'toxic', name: 'Toxic (but applied anyway)', desc: 'A job with red flags in the notes. You saw it coming.', icon: '☠️', hidden: true, check: ({ jobs }) => jobs.some(j => (j.notes||'').toLowerCase().includes('red flag') || (j.notes||'').toLowerCase().includes('toxic')) },
   { id: 'under_pressure', name: 'Under pressure (of three deadlines)', desc: '3 deadlines within 5 days.', icon: '💥', hidden: true, check: ({ jobs }) => { const soon = jobs.filter(j => j.deadline && (new Date(j.deadline)-Date.now()) < 5*86400000 && (new Date(j.deadline)-Date.now()) > 0); return soon.length >= 3 } },
+  { id: 'dream_chaser', name: 'Dream chaser', desc: 'You wrote "dream" in your notes. Keep that energy.', icon: '💫', hidden: true, check: ({ jobs }) => jobs.some(j => (j.notes||'').toLowerCase().includes('dream') || (j.notes||'').toLowerCase().includes('rêve')) },
 ]
