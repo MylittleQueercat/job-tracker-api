@@ -1,3 +1,5 @@
+import { STATUS_LABELS } from '../constants'
+
 // TodayFocus component — shows the 3 most important actions for today
 export default function TodayFocus({ jobs, onSelectJob, fetchInterviews }) {
   const now = Date.now()
@@ -40,7 +42,7 @@ export default function TodayFocus({ jobs, onSelectJob, fetchInterviews }) {
         if (!iv.date) return
         const interviewDate = new Date(iv.date)
         const daysUntil = (interviewDate - now) / (1000 * 60 * 60 * 24)
-        if (daysUntil >= 0 && daysUntil <= 7) {
+        if (daysUntil >= -1 && daysUntil <= 7) {
           upcomingInterviews.push({ ...iv, job })
         }
       })
@@ -114,7 +116,7 @@ export default function TodayFocus({ jobs, onSelectJob, fetchInterviews }) {
                     {daysUntil === 0 ? 'Due today' : `Due in ${daysUntil}d`}
                   </p>
                 ) : (
-                  <p className="text-xs font-bold text-[#f72585] uppercase tracking-wide">{job.status.replace('_', ' ')}</p>
+                  <p className="text-xs font-bold text-[#f72585] uppercase tracking-wide">{STATUS_LABELS[job.status] || job.status.replace('_', ' ')}</p>
                 )}
               </div>
             </button>

@@ -70,7 +70,7 @@ export default function JobDrawer({
             <>
               {/* View mode */}
               {selectedJob.location && <p>📍 {selectedJob.location}</p>}
-              {selectedJob.source && <p>🔗 <a href={selectedJob.source} target="_blank" className="text-blue-400 hover:underline">{selectedJob.source}</a></p>}
+              {selectedJob.source && <p className="break-all">🔗 <a href={selectedJob.source} target="_blank" className="text-blue-400 hover:underline">{selectedJob.source}</a></p>}
               {selectedJob.job_type && <p>💼 {selectedJob.job_type}</p>}
               {selectedJob.deadline && <p>⏰ {selectedJob.deadline}</p>}
 
@@ -261,7 +261,7 @@ export default function JobDrawer({
                   {/* Interview view */}
                   <p className="font-medium">Round {iv.round} {iv.interview_type && `· ${iv.interview_type}`}</p>
                   {iv.date && <p className="text-gray-400">📅 {iv.date}</p>}
-                  {iv.notes && <p className="text-gray-400 mt-1">{iv.notes}</p>}
+                  {iv.notes && <p className="text-gray-400 mt-1 break-all whitespace-pre-wrap">{iv.notes}</p>}
                   <div className="flex gap-2 justify-end mt-1">
                     <button onClick={() => { setEditingInterviewId(iv.id); setEditInterviewData({ round: iv.round, interview_type: iv.interview_type || '', date: iv.date || '', notes: iv.notes || '' }) }} className="px-3 py-1 bg-blue-600/20 text-blue-400 hover:bg-blue-600/40 rounded-lg text-xs">Edit</button>
                     <button onClick={() => setConfirmDeleteInterviewId(iv.id)} className="px-3 py-1 bg-red-600/20 text-red-400 hover:bg-red-600/40 rounded-lg text-xs">Delete</button>

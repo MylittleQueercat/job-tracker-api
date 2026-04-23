@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react'
-import { STATUSES, STATUS_CHART_COLORS } from '../constants'
+import { STATUSES, STATUS_CHART_COLORS, STATUS_LABELS } from '../constants'
 
 // Highlights matching text in search results
 function highlight(text, query) {
@@ -277,7 +277,7 @@ export default function JobList({
                     borderColor: STATUS_CHART_COLORS[job.status] + '30'
                   }}
                 >
-                  {job.status.replace('_', ' ')}
+                  {STATUS_LABELS[job.status] || job.status.replace('_', ' ')}
                 </button>
                 {activeStatusPicker === job.id && (
                   <>
@@ -294,7 +294,7 @@ export default function JobList({
                             ${job.status === s ? 'bg-white/10 text-white' : 'text-white/40 hover:bg-white/5 hover:text-white/80'}`}
                         >
                           <span className="shrink-0 w-1.5 h-1.5 rounded-full" style={{ backgroundColor: STATUS_CHART_COLORS[s] }} />
-                          <span className="opacity-90">{s.replace('_', ' ')}</span>
+                          <span className="opacity-90">{STATUS_LABELS[s] || s.replace('_', ' ')}</span>
                         </button>
                       ))}
                     </div>

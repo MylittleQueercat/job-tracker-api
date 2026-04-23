@@ -7,7 +7,7 @@ import JobList from './components/JobList'
 import JobDrawer from './components/JobDrawer'
 import CatAssistant from './CatAssistant'
 import * as XLSX from 'xlsx'
-import { STATUSES, STATUS_COLORS, STATUS_CHART_COLORS, MOTIVATIONS, ACHIEVEMENTS } from './constants'
+import { STATUSES, STATUS_LABELS, STATUS_COLORS, STATUS_CHART_COLORS, MOTIVATIONS, ACHIEVEMENTS } from './constants'
 import Achievements from './components/Achievements'
 
 const API = 'https://job-tracker-8xwj.onrender.com'
@@ -19,6 +19,7 @@ export default function App() {
   const [fetching, setFetching] = useState(false)
   const [error, setError] = useState(null)
   const [filter, setFilter] = useState('all')
+  const filteredJobs = filter === 'all' ? jobs : jobs.filter(j => j.status === filter)
 
   // ── Add job form state ─────────────────────────────────────────────────────
   const [showForm, setShowForm] = useState(false)
@@ -116,7 +117,7 @@ export default function App() {
   useEffect(() => {
     if (!token) return
     setFetching(true)
-    const url = filter === 'all' ? `${API}/jobs/` : `${API}/jobs/?status=${filter}`
+    const url = `${API}/jobs/`
     authFetch(url)
       .then(res => res.json())
       .then(data => {
@@ -125,7 +126,7 @@ export default function App() {
         checkAchievements(data, interviews.length)
       })
       .catch(err => { setError(err.message); setLoading(false); setFetching(false) })
-  }, [filter, token])
+  }, [token])
 
   useEffect(() => {
     localStorage.setItem('jobDraft', JSON.stringify(newJob))
@@ -398,6 +399,9 @@ export default function App() {
     setJobs(prev => prev.map(j => j.id === id ? { ...j, status } : j))
     if (status === 'offer') celebrate()
 
+    const progressStatuses = ['phone_screen', 'technical_test', 'interview', 'final_interview']
+    if (progressStatuses.includes(status)) triggerCatCelebration()
+
     authFetch(`${API}/jobs/${id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
@@ -625,7 +629,7 @@ export default function App() {
 
       {page === 'home' && (
         <>
-          <Dashboard jobs={jobs} />
+          <Dashboard jobs={filteredJobs} />
           <TodayFocus
             jobs={jobs}
             onSelectJob={setSelectedJob}

@@ -2,7 +2,7 @@ from pydantic import BaseModel, field_validator, ConfigDict
 from typing import Optional
 from datetime import datetime, date as date_type
 
-VALID_STATUSES = {"applied", "phone_screen", "technical_test", "interview", "final_interview", "offer", "rejected", "no_response"}
+VALID_STATUSES = {"applied", "phone_screen", "technical_test", "interview", "final_interview", "offer", "rejected", "no_response", "withdrew"}
 VALID_JOB_TYPES = {"internship", "full-time", "contract"}
 
 class InterviewCreate(BaseModel):

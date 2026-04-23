@@ -1,8 +1,20 @@
 // Status list used for filters and dropdowns
 export const STATUSES = [
   'all', 'applied', 'phone_screen', 'technical_test',
-  'interview', 'final_interview', 'offer', 'rejected', 'no_response'
+  'interview', 'final_interview', 'offer', 'withdrew', 'rejected', 'no_response'
 ]
+
+export const STATUS_LABELS = {
+  applied: 'Applied',
+  phone_screen: 'Screening',
+  technical_test: 'Technical Test',
+  interview: 'Interview',
+  final_interview: 'Final Interview',
+  offer: 'Offer',
+  rejected: 'Rejected',
+  no_response: 'No Response',
+  withdrew: 'Withdrew',
+}
 
 // Tailwind classes for status badge colors
 export const STATUS_COLORS = {
@@ -12,6 +24,7 @@ export const STATUS_COLORS = {
   interview: 'bg-orange-500/20 text-orange-400',
   final_interview: 'bg-pink-500/20 text-pink-400',
   offer: 'bg-green-500/20 text-green-400',
+  withdrew: 'bg-orange-500/20 text-orange-400',
   rejected: 'bg-red-500/20 text-red-400',
   no_response: 'bg-gray-500/20 text-gray-400',
 }
@@ -24,6 +37,7 @@ export const STATUS_CHART_COLORS = {
   interview: '#f97316',
   final_interview: '#ec4899',
   offer: '#22c55e',
+  withdrew: '#f97316',
   rejected: '#ef4444',
   no_response: '#6b7280',
 }
