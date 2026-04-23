@@ -8,7 +8,7 @@
 
 A RESTful API for tracking job applications and interview rounds, built with FastAPI and PostgreSQL.
 
-- **Site**: [jobterminal.netlify.app](https://jobtrackerapi.netlify.app)
+- **Site**: [jobterminal.netlify.app](https://jobterminal.netlify.app)
 
 ---
 
