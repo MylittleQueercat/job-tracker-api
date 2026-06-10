@@ -32,6 +32,22 @@ def extract_json(text: str) -> dict:
         return json.loads(match.group())
     raise json.JSONDecodeError("No JSON found", text, 0)
 
+async def call_gemini(prompt: str, api_key: str) -> dict:
+    client = genai.Client(api_key=api_key)
+    for attempt in range(2):
+        try:
+            response = client.models.generate_content(
+                model="gemini-2.5-flash-lite",
+                contents=prompt
+            )
+            break
+        except Exception as e:
+            if attempt == 0 and "503" in str(e):
+                await asyncio.sleep(2)
+            else:
+                raise
+    return extract_json(response.text)
+
 router = APIRouter()
 
 # Request body schema
@@ -70,23 +86,7 @@ Job description:
 """
 
     try:
-        client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
-        # Retry once on 503 (Gemini temporary overload)
-        for attempt in range(2):
-            try:
-                response = client.models.generate_content(
-                    model="gemini-2.5-flash-lite",
-                    contents=prompt
-                )
-                break
-            except Exception as e:
-                if attempt == 0 and "503" in str(e):
-                    import time
-                    await asyncio.sleep(2)
-                else:
-                    raise
-        parsed = extract_json(response.text)
-                
+        parsed = await call_gemini(prompt, os.getenv("GEMINI_API_KEY"))
         return ParsedJob(**parsed)
 
     except json.JSONDecodeError:
@@ -147,20 +147,7 @@ Return nothing else, no markdown, just the JSON.
 """
 
     try:
-        client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
-        for attempt in range(2):
-            try:
-                response = client.models.generate_content(
-                    model="gemini-2.5-flash-lite",
-                    contents=prompt
-                )
-                break
-            except Exception as e:
-                if attempt == 0 and "503" in str(e):
-                    await asyncio.sleep(2)
-                else:
-                    raise
-        parsed = extract_json(response.text)
+        parsed = await call_gemini(prompt, os.getenv("GEMINI_API_KEY"))
         return FollowUpEmail(**parsed)
 
     except json.JSONDecodeError:
@@ -241,20 +228,7 @@ Ne retourne rien d'autre, pas de markdown, juste le JSON.
 """
 
     try:
-        client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
-        for attempt in range(2):
-            try:
-                response = client.models.generate_content(
-                    model="gemini-2.5-flash-lite",
-                    contents=prompt
-                )
-                break
-            except Exception as e:
-                if attempt == 0 and "503" in str(e):
-                    await asyncio.sleep(2)
-                else:
-                    raise
-        parsed = extract_json(response.text)
+        parsed = await call_gemini(prompt, os.getenv("GEMINI_API_KEY"))
         # Save brief to job in database
         from app.models.job import Job
         import json as json_module
