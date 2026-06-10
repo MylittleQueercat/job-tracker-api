@@ -9,6 +9,7 @@ import CatAssistant from './CatAssistant'
 import * as XLSX from 'xlsx'
 import { STATUSES, STATUS_LABELS, STATUS_COLORS, STATUS_CHART_COLORS, MOTIVATIONS, ACHIEVEMENTS } from './constants'
 import { parseJD, generateFollowUp, generateCompanyBrief } from './api'
+import Resources from './components/Resources'
 import Achievements from './components/Achievements'
 
 const API = 'https://job-tracker-8xwj.onrender.com'
@@ -44,6 +45,7 @@ export default function App() {
   const [showUserMenu, setShowUserMenu] = useState(false)
   const [showExportMenu, setShowExportMenu] = useState(false)
   const [page, setPage] = useState('home')
+  const [userApiKey, setUserApiKey] = useState(localStorage.getItem('geminiApiKey') || '')
 
   function switchLanguage(lang) {
     setLanguage(lang)
@@ -168,7 +170,7 @@ export default function App() {
   async function handleParseJD(text) {
     setParsingJD(true)
     try {
-      const result = await parseJD(authFetch, text)
+      const result = await parseJD(authFetch, text, userApiKey)
       showToast('✨ JD parsed!')
       return result
     } catch (err) {
@@ -183,7 +185,7 @@ export default function App() {
   async function handleGenerateFollowUp(job, language = 'fr') {
     setGeneratingFollowup(true)
     try {
-      return await generateFollowUp(authFetch, job, language)
+      return await generateFollowUp(authFetch, job, language, userApiKey)
     } catch (err) {
       showToast(err.message || 'Generation failed')
       return null
@@ -197,7 +199,7 @@ export default function App() {
     setGeneratingBrief(true)
     try {
       console.log('generating brief with language:', language)
-      const brief = await generateCompanyBrief(authFetch, job, language)
+      const brief = await generateCompanyBrief(authFetch, job, language, userApiKey)
       // Update the job in local state so brief persists without refetch
       setJobs(prev => prev.map(j => j.id === job.id ? { ...j, company_brief: JSON.stringify(brief) } : j))
       return brief
@@ -583,6 +585,18 @@ export default function App() {
         >
           Achievements 🏆
         </button>
+        <button
+          onClick={() => setPage('resources')}
+          className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${page === 'resources' ? 'bg-white/10 text-white' : 'text-gray-500 hover:text-white'}`}
+        >
+          Resources 🗺️
+        </button>
+        <button
+          onClick={() => setPage('settings')}
+          className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${page === 'settings' ? 'bg-white/10 text-white' : 'text-gray-500 hover:text-white'}`}
+        >
+          Settings ⚙️
+        </button>
       </div>
 
       {page === 'home' && (
@@ -610,6 +624,60 @@ export default function App() {
 
       {page === 'achievements' && (
         <Achievements unlockedAchievements={unlockedAchievements} />
+      )}
+
+      {page === 'resources' && <Resources />}
+
+      {page === 'settings' && (
+        <div className="max-w-2xl mx-auto px-4 pb-20">
+          <h2 className="text-2xl font-black uppercase tracking-tight text-white mb-8">Settings</h2>
+
+          {/* Gemini API Key */}
+          <div className="rounded-2xl p-6 mb-4"
+            style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)' }}>
+            <h3 className="text-sm font-bold text-white mb-1">Gemini API Key</h3>
+            <p className="text-xs text-gray-500 mb-4">
+              Configure your own key for higher limits.{' '}
+              <a href="https://aistudio.google.com/app/apikey" target="_blank" className="text-[#4cc9f0] hover:underline">
+                Get a free key here →
+              </a>
+            </p>
+            <div className="flex gap-3">
+              <input
+                type="password"
+                value={userApiKey}
+                onChange={e => setUserApiKey(e.target.value)}
+                placeholder="AIza..."
+                className="flex-1 bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white text-sm outline-none focus:border-white/30 placeholder-gray-600"
+              />
+              <button
+                onClick={() => {
+                  localStorage.setItem('geminiApiKey', userApiKey)
+                  showToast('API key saved!')
+                }}
+                className="px-4 py-2 rounded-lg text-sm font-medium text-white"
+                style={{ background: 'linear-gradient(90deg, #7209b7, #f72585)' }}
+              >
+                Save
+              </button>
+              {userApiKey && (
+                <button
+                  onClick={() => {
+                    setUserApiKey('')
+                    localStorage.removeItem('geminiApiKey')
+                    showToast('API key removed')
+                  }}
+                  className="px-4 py-2 rounded-lg text-sm text-gray-500 hover:text-white border border-white/10"
+                >
+                  Remove
+                </button>
+              )}
+            </div>
+            {userApiKey && (
+              <p className="text-xs text-green-400 mt-2">✓ Using your personal API key</p>
+            )}
+          </div>
+        </div>
       )}
 
       {/* Footer */}

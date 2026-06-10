@@ -5,6 +5,7 @@ from datetime import datetime
 from google import genai
 from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
+from typing import Optional
 from app.routers.jobs import get_current_user
 from app.database import get_db
 from sqlalchemy.orm import Session
@@ -55,6 +56,7 @@ router = APIRouter()
 
 class ParseRequest(BaseModel):
     text: str
+    user_api_key: Optional[str] = None
 
 # Response schema
 
@@ -86,7 +88,7 @@ Job description:
 """
 
     try:
-        parsed = await call_gemini(prompt, os.getenv("GEMINI_API_KEY"))
+        parsed = await call_gemini(prompt, body.user_api_key or os.getenv("GEMINI_API_KEY"))
         return ParsedJob(**parsed)
 
     except json.JSONDecodeError:
@@ -104,6 +106,7 @@ class FollowUpRequest(BaseModel):
     position: str
     created_at: str
     language: str = "fr"  # "fr" or "en"
+    user_api_key: Optional[str] = None
 
 # Response schema
 class FollowUpEmail(BaseModel):
@@ -147,7 +150,7 @@ Return nothing else, no markdown, just the JSON.
 """
 
     try:
-        parsed = await call_gemini(prompt, os.getenv("GEMINI_API_KEY"))
+        parsed = await call_gemini(prompt, body.user_api_key or os.getenv("GEMINI_API_KEY"))
         return FollowUpEmail(**parsed)
 
     except json.JSONDecodeError:
@@ -166,6 +169,7 @@ class CompanyBriefRequest(BaseModel):
     company: str
     position: str
     language: str = "fr"
+    user_api_key: Optional[str] = None
 
 # Response schema
 class CompanyBrief(BaseModel):
@@ -228,7 +232,7 @@ Ne retourne rien d'autre, pas de markdown, juste le JSON.
 """
 
     try:
-        parsed = await call_gemini(prompt, os.getenv("GEMINI_API_KEY"))
+        parsed = await call_gemini(prompt, body.user_api_key or os.getenv("GEMINI_API_KEY"))
         # Save brief to job in database
         from app.models.job import Job
         import json as json_module

@@ -1,10 +1,10 @@
 const API = 'https://job-tracker-8xwj.onrender.com'
 
-export async function parseJD(authFetch, text) {
+export async function parseJD(authFetch, text, userApiKey) {
   const res = await authFetch(`${API}/api/parse-jd`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ text })
+    body: JSON.stringify({ text, user_api_key: userApiKey || null })
   })
   if (!res.ok) {
     const err = await res.json()
@@ -13,7 +13,7 @@ export async function parseJD(authFetch, text) {
   return res.json()
 }
 
-export async function generateFollowUp(authFetch, job, language) {
+export async function generateFollowUp(authFetch, job, language, userApiKey) {
   const res = await authFetch(`${API}/api/generate-followup`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -21,7 +21,8 @@ export async function generateFollowUp(authFetch, job, language) {
       company: job.company,
       position: job.position,
       created_at: job.created_at,
-      language
+      language,
+      user_api_key: userApiKey || null
     })
   })
   if (!res.ok) {
@@ -31,7 +32,7 @@ export async function generateFollowUp(authFetch, job, language) {
   return res.json()
 }
 
-export async function generateCompanyBrief(authFetch, job, language) {
+export async function generateCompanyBrief(authFetch, job, language, userApiKey) {
   const res = await authFetch(`${API}/api/company-brief`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -39,7 +40,8 @@ export async function generateCompanyBrief(authFetch, job, language) {
       job_id: job.id,
       company: job.company,
       position: job.position,
-      language
+      language,
+      user_api_key: userApiKey || null
     })
   })
   if (!res.ok) {

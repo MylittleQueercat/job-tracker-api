@@ -16,8 +16,6 @@ export default function JobDrawer({
   onGenerateCompanyBrief,
   onShowToast
 }) {
-  if (!selectedJob) return null
-
   const [followUpEmail, setFollowUpEmail] = useState(null)
   const [generatingEmail, setGeneratingEmail] = useState(false)
   const [companyBrief, setCompanyBrief] = useState(
@@ -26,12 +24,14 @@ export default function JobDrawer({
   const [generatingBrief, setGeneratingBrief] = useState(false)
   const [companyBriefExpanded, setCompanyBriefExpanded] = useState(false)
 
+  if (!selectedJob) return null
+
   return (
     <div className="fixed inset-0 z-50 flex justify-end">
       {/* Backdrop — click to close */}
-      <div className="absolute inset-0 bg-black/60" onClick={() => setSelectedJob(null)} />
+      <div className="absolute inset-0 bg-black/60 animate-fade-in" onClick={() => setSelectedJob(null)} />
 
-      <div className="relative bg-gray-900 w-full max-w-lg h-full overflow-y-auto p-6 flex flex-col gap-6 shadow-xl">
+      <div className="relative bg-gray-900 w-full max-w-lg h-full overflow-y-auto p-6 flex flex-col gap-6 shadow-xl animate-slide-in">
 
         {/* Drawer header */}
         <div className="flex justify-between items-start">
