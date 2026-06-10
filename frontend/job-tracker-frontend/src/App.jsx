@@ -128,10 +128,6 @@ export default function App() {
       .catch(err => { setError(err.message); setLoading(false); setFetching(false) })
   }, [token])
 
-  useEffect(() => {
-    localStorage.setItem('jobDraft', JSON.stringify(newJob))
-  }, [newJob])
-
   // ── Auth helpers ───────────────────────────────────────────────────────────
 
   // Wrapper around fetch that injects the auth token and handles 401 expiry
