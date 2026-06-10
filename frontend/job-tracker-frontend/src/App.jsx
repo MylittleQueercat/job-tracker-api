@@ -8,6 +8,7 @@ import JobDrawer from './components/JobDrawer'
 import CatAssistant from './CatAssistant'
 import * as XLSX from 'xlsx'
 import { STATUSES, STATUS_LABELS, STATUS_COLORS, STATUS_CHART_COLORS, MOTIVATIONS, ACHIEVEMENTS } from './constants'
+import { parseJD, generateFollowUp, generateCompanyBrief } from './api'
 import Achievements from './components/Achievements'
 
 const API = 'https://job-tracker-8xwj.onrender.com'
@@ -167,20 +168,11 @@ export default function App() {
   async function handleParseJD(text) {
     setParsingJD(true)
     try {
-      const res = await authFetch(`${API}/api/parse-jd`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text })
-      })
-      if (!res.ok) {
-        const err = await res.json()
-        showToast(err.detail || 'Parsing failed')
-        return null
-      }
+      const result = await parseJD(authFetch, text)
       showToast('✨ JD parsed!')
-      return await res.json()
+      return result
     } catch (err) {
-      showToast('Parsing failed')
+      showToast(err.message || 'Parsing failed')
       return null
     } finally {
       setParsingJD(false)
@@ -191,24 +183,9 @@ export default function App() {
   async function handleGenerateFollowUp(job, language = 'fr') {
     setGeneratingFollowup(true)
     try {
-      const res = await authFetch(`${API}/api/generate-followup`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          company: job.company,
-          position: job.position,
-          created_at: job.created_at,
-          language
-        })
-      })
-      if (!res.ok) {
-        const err = await res.json()
-        showToast(err.detail || 'Generation failed')
-        return null
-      }
-      return await res.json()
+      return await generateFollowUp(authFetch, job, language)
     } catch (err) {
-      showToast('Generation failed')
+      showToast(err.message || 'Generation failed')
       return null
     } finally {
       setGeneratingFollowup(false)
@@ -220,27 +197,12 @@ export default function App() {
     setGeneratingBrief(true)
     try {
       console.log('generating brief with language:', language)
-      const res = await authFetch(`${API}/api/company-brief`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          job_id: job.id,
-          company: job.company,
-          position: job.position,
-          language
-        })
-      })
-      if (!res.ok) {
-        const err = await res.json()
-        showToast(err.detail || 'Generation failed')
-        return null
-      }
-      const brief = await res.json()
+      const brief = await generateCompanyBrief(authFetch, job, language)
       // Update the job in local state so brief persists without refetch
       setJobs(prev => prev.map(j => j.id === job.id ? { ...j, company_brief: JSON.stringify(brief) } : j))
       return brief
     } catch (err) {
-      showToast('Generation failed')
+      showToast(err.message || 'Generation failed')
       return null
     } finally {
       setGeneratingBrief(false)
