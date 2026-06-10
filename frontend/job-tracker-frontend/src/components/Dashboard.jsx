@@ -12,6 +12,8 @@ export default function Dashboard({ jobs }) {
     return Object.entries(counts).map(([status, count]) => ({ name: status, value: count }))
   }
 
+  const chartData = getChartData()
+
   const activeInterviews = jobs.filter(j =>
     j.status === 'interview' || j.status === 'final_interview'
   ).length
@@ -53,14 +55,14 @@ export default function Dashboard({ jobs }) {
           <div className="absolute inset-0 bg-white/5 rounded-full blur-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-700"></div>
           <PieChart width={220} height={220}>
             <Pie
-              data={getChartData()}
+              data={chartData}
               cx={110} cy={110}
               innerRadius={70} outerRadius={95}
               paddingAngle={5}
               dataKey="value"
               stroke="none"
             >
-              {getChartData().map((entry, index) => (
+              {chartData.map((entry, index) => (
                 <Cell key={index} fill={STATUS_CHART_COLORS[entry.name] || '#6b7280'} />
               ))}
             </Pie>

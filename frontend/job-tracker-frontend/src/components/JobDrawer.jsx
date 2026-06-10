@@ -13,7 +13,8 @@ export default function JobDrawer({
   onAddInterview, onUpdateInterview, onDeleteInterview,
   confirmDeleteId, setConfirmDeleteId,
   onGenerateFollowUp,
-  onGenerateCompanyBrief
+  onGenerateCompanyBrief,
+  onShowToast
 }) {
   if (!selectedJob) return null
 
@@ -157,7 +158,7 @@ export default function JobDrawer({
                 <button
                   onClick={() => {
                     navigator.clipboard.writeText(`Subject: ${followUpEmail.subject}\n\n${followUpEmail.body}`)
-                    alert('Copied!')
+                    onShowToast('Copied!')
                   }}
                   className="px-3 py-1 rounded-lg text-xs text-white"
                   style={{ background: 'rgba(76,201,240,0.15)', color: '#4cc9f0' }}

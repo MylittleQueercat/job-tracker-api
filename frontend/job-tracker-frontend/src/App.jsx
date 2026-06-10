@@ -686,6 +686,7 @@ export default function App() {
         onAddInterview={handleAddInterview} onUpdateInterview={handleUpdateInterview} onDeleteInterview={handleDeleteInterview}
         onGenerateFollowUp={(job, lang) => handleGenerateFollowUp(job, lang || language)}
         onGenerateCompanyBrief={handleGenerateCompanyBrief}
+        onShowToast={showToast}
         parsingJD={parsingJD}
         generatingFollowup={generatingFollowup}
         generatingBrief={generatingBrief}

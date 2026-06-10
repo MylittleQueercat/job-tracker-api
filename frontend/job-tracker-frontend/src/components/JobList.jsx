@@ -12,6 +12,18 @@ function highlight(text, query) {
   )
 }
 
+const STATUS_PRIORITY = {
+  final_interview: 0,
+  interview: 1,
+  technical_test: 2,
+  phone_screen: 3,
+  applied: 4,
+  no_response: 5,
+  withdrew: 6,
+  offer: 7,
+  rejected: 8,
+}
+
 // Job list with search bar, status filters, and job cards
 export default function JobList({
   jobs, fetching, filter, setFilter,
@@ -31,18 +43,6 @@ export default function JobList({
     onTyping(true)
     if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current)
     typingTimeoutRef.current = setTimeout(() => onTyping(false), 2000)
-  }
-
-  const STATUS_PRIORITY = {
-    final_interview: 0,
-    interview: 1,
-    technical_test: 2,
-    phone_screen: 3,
-    applied: 4,
-    no_response: 5,
-    withdrew: 6,
-    offer: 7,
-    rejected: 8,
   }
 
   const filteredJobs = jobs
