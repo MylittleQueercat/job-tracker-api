@@ -6,6 +6,8 @@ from google import genai
 from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
 from app.routers.jobs import get_current_user
+from app.database import get_db
+from sqlalchemy.orm import Session
 import re
 
 def extract_json(text: str) -> dict:
@@ -189,7 +191,8 @@ class CompanyBrief(BaseModel):
 @router.post("/company-brief", response_model=CompanyBrief)
 async def generate_company_brief(
     body: CompanyBriefRequest,
-    current_user=Depends(get_current_user)
+    current_user=Depends(get_current_user),
+    db: Session = Depends(get_db)
 ):
     if body.language == "zh":
         prompt = f"""
@@ -253,17 +256,12 @@ Ne retourne rien d'autre, pas de markdown, juste le JSON.
                     raise
         parsed = extract_json(response.text)
         # Save brief to job in database
-        from app.database import SessionLocal
         from app.models.job import Job
         import json as json_module
-        db = SessionLocal()
-        try:
-            job = db.query(Job).filter(Job.id == body.job_id, Job.user_id == current_user.id).first()
-            if job:
-                job.company_brief = json_module.dumps(parsed)
-                db.commit()
-        finally:
-            db.close()
+        job = db.query(Job).filter(Job.id == body.job_id, Job.user_id == current_user.id).first()
+        if job:
+            job.company_brief = json_module.dumps(parsed)
+            db.commit()
         return CompanyBrief(**parsed)
 
     except json.JSONDecodeError:
