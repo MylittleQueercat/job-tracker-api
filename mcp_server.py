@@ -142,5 +142,37 @@ def generate_followup_email(job_id: int, language: str = "fr") -> dict:
         return email_resp.json()
 
 
+@mcp.tool()
+def add_job(
+    company: str,
+    position: str,
+    status: str = "applied",
+    location: str = "",
+    source: str = "",
+) -> dict:
+    """Create a new job application.
+
+    Args:
+        company: Company name.
+        position: Job title / position name.
+        status: Application status (default: 'applied').
+        location: Job location (optional).
+        source: Where the job was found, e.g. LinkedIn (optional).
+    """
+    payload = {"company": company, "position": position, "status": status}
+    if location:
+        payload["location"] = location
+    if source:
+        payload["source"] = source
+    with httpx.Client() as client:
+        resp = client.post(
+            f"{API_BASE}/jobs/",
+            headers={**_headers(), "Content-Type": "application/json"},
+            json=payload,
+        )
+        resp.raise_for_status()
+        return resp.json()
+
+
 if __name__ == "__main__":
     mcp.run()
