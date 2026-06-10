@@ -15,19 +15,19 @@ export default function Dashboard({ jobs }) {
   const chartData = getChartData()
 
   const activeInterviews = jobs.filter(j =>
-    j.status === 'interview' || j.status === 'final_interview'
+    j.status === 'interview' || j.status === 'final_interview' || j.status === 'technical_test'
   ).length
 
   const offers = jobs.filter(j => j.status === 'offer').length
 
   const successRate = jobs.length === 0 ? 0 : Math.round(
     jobs.filter(j =>
-      j.status === 'interview' || j.status === 'final_interview' || j.status === 'offer'
+      j.status === 'technical_test' || j.status === 'interview' || j.status === 'final_interview' || j.status === 'offer'
     ).length / jobs.length * 100
   )
 
   const pending = jobs.filter(j =>
-    j.status === 'applied' || j.status === 'phone_screen'
+    j.status === 'applied'
   ).length
 
   return (

@@ -1,12 +1,11 @@
 // Status list used for filters and dropdowns
 export const STATUSES = [
-  'all', 'applied', 'phone_screen', 'technical_test',
+  'all', 'applied', 'technical_test',
   'interview', 'final_interview', 'offer', 'withdrew', 'rejected', 'no_response'
 ]
 
 export const STATUS_LABELS = {
   applied: 'Applied',
-  phone_screen: 'Screening',
   technical_test: 'Technical Test',
   interview: 'Interview',
   final_interview: 'Final Interview',
@@ -19,7 +18,6 @@ export const STATUS_LABELS = {
 // Tailwind classes for status badge colors
 export const STATUS_COLORS = {
   applied: 'bg-blue-500/20 text-blue-400',
-  phone_screen: 'bg-yellow-500/20 text-yellow-400',
   technical_test: 'bg-purple-500/20 text-purple-400',
   interview: 'bg-orange-500/20 text-orange-400',
   final_interview: 'bg-pink-500/20 text-pink-400',
@@ -32,7 +30,6 @@ export const STATUS_COLORS = {
 // Hex colors for charts and dynamic styling
 export const STATUS_CHART_COLORS = {
   applied: '#3b82f6',
-  phone_screen: '#eab308',
   technical_test: '#a855f7',
   interview: '#f97316',
   final_interview: '#ec4899',
@@ -66,7 +63,7 @@ export const ACHIEVEMENTS = [
   { id: 'paris_je_taime', name: 'Paris, je t\'aime', desc: '3 applications in Paris. The city of lights and CDIs.', icon: '🇫🇷', check: ({ jobs }) => jobs.filter(j => (j.location||'').toLowerCase().includes('paris')).length >= 3 },
 
   // 面试
-  { id: 'they_called', name: 'They called. You answered.', desc: 'First phone screen.', icon: '📞', check: ({ jobs }) => jobs.some(j => ['phone_screen','technical_test','interview','final_interview','offer'].includes(j.status)) },
+  { id: 'they_called', name: 'They called. You answered.', desc: 'First phone screen.', icon: '📞', check: ({ jobs }) => jobs.some(j => ['technical_test','interview','final_interview','offer'].includes(j.status)) },
   { id: 'big_brain', name: 'Big brain time', desc: 'Your leetcode grind was not in vain.', icon: '🧠', check: ({ jobs }) => jobs.some(j => ['technical_test','interview','final_interview','offer'].includes(j.status)) },
   { id: 'veteran', name: 'Veteran of the culture wars', desc: 'Log 10 interview records total.', icon: '🥋', check: ({ totalInterviews }) => totalInterviews >= 10 },
   { id: 'final_countdown', name: 'This is the final countdown', desc: 'Reach final interview stage.', icon: '🏟️', check: ({ jobs }) => jobs.some(j => j.status === 'final_interview') },
@@ -77,8 +74,6 @@ export const ACHIEVEMENTS = [
   { id: 'let_it_be', name: 'Let it be (rejected)', desc: '5 rejections. The Beatles understand.', icon: '🎵', check: ({ jobs }) => jobs.filter(j => j.status === 'rejected').length >= 5 },
   { id: 'shake_it_off', name: 'Shake it off', desc: 'Apply within 24h of a rejection.', icon: '🐍', check: ({ jobs }) => { const rejected = jobs.filter(j => j.status === 'rejected').map(j => new Date(j.updated_at)); return jobs.some(j => rejected.some(r => { const diff = new Date(j.created_at) - r; return diff > 0 && diff < 86400000 })) } },
   { id: 'ghost_protocol', name: 'Ghost protocol', desc: '5 companies ghosted you. Still here.', icon: '👻', check: ({ jobs }) => jobs.filter(j => j.status === 'no_response').length >= 5 },
-  { id: 'situationship', name: 'Situationship', desc: 'A job stuck on phone_screen for 30+ days.', icon: '😬', check: ({ jobs }) => jobs.some(j => j.status === 'phone_screen' && (Date.now() - new Date(j.updated_at)) > 30*86400000) },
-
   // 终极
   { id: 'room_of_own', name: 'A room of one\'s own (with a salary)', desc: 'First offer. Virginia Woolf approves.', icon: '🏠', check: ({ jobs }) => jobs.some(j => j.status === 'offer') },
   { id: 'power_move', name: 'Power move', desc: 'Two offers at the same time.', icon: '😎', check: ({ jobs }) => jobs.filter(j => j.status === 'offer').length >= 2 },

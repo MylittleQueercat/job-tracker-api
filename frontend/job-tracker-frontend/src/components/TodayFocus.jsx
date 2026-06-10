@@ -36,7 +36,6 @@ export default function TodayFocus({ jobs, onSelectJob, fetchInterviews }) {
   // Thresholds based on French job market rhythm
   const FOLLOWUP_THRESHOLDS = {
     applied: 14,
-    phone_screen: 7,
     technical_test: 5,
     interview: 7,
     final_interview: 5,
