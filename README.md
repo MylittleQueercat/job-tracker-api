@@ -34,7 +34,7 @@ A full-stack job application tracker with AI-powered features and MCP server int
 ## Status state machine
 
 ```
-applied → technical_test → interview → final_interview → offer
+applied → interview → technical_test → final_interview → offer
                                                         ↘ rejected
                                                         ↘ withdrew
                                                         ↘ no_response
