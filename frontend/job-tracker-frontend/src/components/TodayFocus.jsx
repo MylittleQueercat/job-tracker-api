@@ -48,7 +48,11 @@ export default function TodayFocus({ jobs, onSelectJob, fetchInterviews }) {
     if (['rejected', 'withdrew', 'offer', 'no_response'].includes(job.status)) return false
     const threshold = FOLLOWUP_THRESHOLDS[job.status]
     if (!threshold) return false
-    const daysSince = (now - new Date(job.updated_at || job.created_at)) / (1000 * 60 * 60 * 24)
+    const latestInterview = job.interviews && job.interviews.length > 0
+      ? Math.max(...job.interviews.map(iv => iv.created_at ? new Date(iv.created_at).getTime() : 0))
+      : 0
+    const lastActivity = Math.max(new Date(job.updated_at || job.created_at).getTime(), latestInterview)
+    const daysSince = (now - lastActivity) / (1000 * 60 * 60 * 24)
     return daysSince >= threshold
   }).slice(0, 3)
 
