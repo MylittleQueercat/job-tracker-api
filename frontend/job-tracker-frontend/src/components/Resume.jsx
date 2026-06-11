@@ -40,6 +40,7 @@ export default function Resume({ token }) {
   const [resumeName, setResumeName] = useState('')
   const [toast, setToast] = useState(null)
   const [confirmDeleteId, setConfirmDeleteId] = useState(null)
+  const [expandedId, setExpandedId] = useState(null)
   const fileInputRef = useRef(null)
 
   function authFetch(url, options = {}) {
@@ -247,58 +248,75 @@ export default function Resume({ token }) {
       ) : (
         <div className="flex flex-col gap-3">
           {resumes.map(r => (
-            <div key={r.id} className="rounded-2xl p-5 flex items-center gap-4 transition-all hover:bg-white/[0.03]" style={cardStyle}>
-              {/* Icon */}
-              <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
-                style={{
-                  background: r.is_default ? 'rgba(247,37,133,0.15)' : 'rgba(255,255,255,0.04)',
-                  border: r.is_default ? '1px solid rgba(247,37,133,0.3)' : '1px solid rgba(255,255,255,0.06)',
-                }}>
-                <svg className="w-4 h-4" style={{ color: r.is_default ? '#f72585' : '#6b7280' }}
-                  fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                    d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                </svg>
-              </div>
-
-              {/* Info */}
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2">
-                  <p className="text-sm font-semibold text-white truncate">{r.name}</p>
-                  {r.is_default && (
-                    <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full"
-                      style={{ background: 'rgba(247,37,133,0.15)', color: '#f72585' }}>
-                      default
-                    </span>
-                  )}
+            <div key={r.id} className="rounded-2xl transition-all hover:bg-white/[0.03]" style={cardStyle}>
+              <div className="p-5 flex items-center gap-4">
+                {/* Icon */}
+                <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
+                  style={{
+                    background: r.is_default ? 'rgba(247,37,133,0.15)' : 'rgba(255,255,255,0.04)',
+                    border: r.is_default ? '1px solid rgba(247,37,133,0.3)' : '1px solid rgba(255,255,255,0.06)',
+                  }}>
+                  <svg className="w-4 h-4" style={{ color: r.is_default ? '#f72585' : '#6b7280' }}
+                    fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                      d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
                 </div>
-                <p className="text-xs text-gray-600 mt-0.5">
-                  {new Date(r.created_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })}
-                  <span className="mx-1">·</span>
-                  {r.content.length.toLocaleString()} chars
-                </p>
-              </div>
 
-              {/* Actions */}
-              <div className="flex items-center gap-2 shrink-0">
-                {!r.is_default && (
+                {/* Info */}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <p className="text-sm font-semibold text-white truncate">{r.name}</p>
+                    {r.is_default && (
+                      <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full"
+                        style={{ background: 'rgba(247,37,133,0.15)', color: '#f72585' }}>
+                        default
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-xs text-gray-600 mt-0.5">
+                    {new Date(r.created_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })}
+                    <span className="mx-1">·</span>
+                    {r.content.length.toLocaleString()} chars
+                  </p>
+                </div>
+
+                {/* Actions */}
+                <div className="flex items-center gap-2 shrink-0">
                   <button
-                    onClick={() => handleSetDefault(r.id)}
+                    onClick={() => setExpandedId(prev => prev === r.id ? null : r.id)}
                     className="px-3 py-1.5 rounded-lg text-xs text-gray-400 hover:text-white border border-white/10 hover:border-white/20 transition-colors"
                   >
-                    Set default
+                    {expandedId === r.id ? 'Hide text' : 'View extracted text'}
                   </button>
-                )}
-                <button
-                  onClick={() => setConfirmDeleteId(r.id)}
-                  className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-600 hover:text-red-400 hover:bg-red-400/10 transition-colors"
-                >
-                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                      d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                  </svg>
-                </button>
+                  {!r.is_default && (
+                    <button
+                      onClick={() => handleSetDefault(r.id)}
+                      className="px-3 py-1.5 rounded-lg text-xs text-gray-400 hover:text-white border border-white/10 hover:border-white/20 transition-colors"
+                    >
+                      Set default
+                    </button>
+                  )}
+                  <button
+                    onClick={() => setConfirmDeleteId(r.id)}
+                    className="w-8 h-8 rounded-lg flex items-center justify-center text-gray-600 hover:text-red-400 hover:bg-red-400/10 transition-colors"
+                  >
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                        d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                  </button>
+                </div>
               </div>
+
+              {expandedId === r.id && (
+                <div className="px-5 pb-5">
+                  <div className="rounded-lg px-3 py-2 text-xs text-gray-400 leading-relaxed whitespace-pre-wrap break-words max-h-64 overflow-y-auto"
+                    style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}>
+                    {r.content}
+                  </div>
+                </div>
+              )}
             </div>
           ))}
         </div>

@@ -25,6 +25,7 @@ export default function JobDrawer({
   )
   const [generatingBrief, setGeneratingBrief] = useState(false)
   const [companyBriefExpanded, setCompanyBriefExpanded] = useState(false)
+  const [expandedInterviewId, setExpandedInterviewId] = useState(null)
   const [matchScore, setMatchScore] = useState(
     selectedJob?.match_score ? JSON.parse(selectedJob.match_score) : null
   )
@@ -358,9 +359,9 @@ export default function JobDrawer({
           <h3 className="text-lg font-semibold mb-3">Interview Records</h3>
           {interviews.length === 0 && <p className="text-gray-500 text-sm">No interviews yet.</p>}
           {interviews.map(iv => (
-            <div key={iv.id} className="bg-gray-800 rounded-xl p-4 mb-3 flex flex-col gap-2 text-sm">
+            <div key={iv.id} className="bg-gray-800 rounded-xl mb-3 text-sm overflow-hidden">
               {editingInterviewId === iv.id ? (
-                <>
+                <div className="p-4 flex flex-col gap-2">
                   {/* Interview edit form */}
                   <div className="flex gap-2">
                     <div className="flex flex-col gap-1 w-20">
@@ -384,17 +385,34 @@ export default function JobDrawer({
                     <button onClick={() => { setEditingInterviewId(null); setEditInterviewData({}) }} className="px-3 py-1 bg-gray-700 text-gray-400 hover:bg-gray-600 rounded-lg text-xs">Cancel</button>
                     <button onClick={() => { onUpdateInterview(selectedJob.id, iv.id, { ...editInterviewData, round: parseInt(editInterviewData.round) }); setEditingInterviewId(null) }} className="px-3 py-1 bg-green-600/20 text-green-400 hover:bg-green-600/40 rounded-lg text-xs">Save</button>
                   </div>
-                </>
+                </div>
               ) : (
                 <>
-                  {/* Interview view */}
-                  <p className="font-medium">Round {iv.round} {iv.interview_type && `· ${iv.interview_type}`}</p>
-                  {iv.date && <p className="text-gray-400">📅 {iv.date}</p>}
-                  {iv.notes && <p className="text-gray-400 mt-1 break-all whitespace-pre-wrap">{iv.notes}</p>}
-                  <div className="flex gap-2 justify-end mt-1">
-                    <button onClick={() => { setEditingInterviewId(iv.id); setEditInterviewData({ round: iv.round, interview_type: iv.interview_type || '', date: iv.date || '', notes: iv.notes || '' }) }} className="px-3 py-1 bg-blue-600/20 text-blue-400 hover:bg-blue-600/40 rounded-lg text-xs">Edit</button>
-                    <button onClick={() => setConfirmDeleteInterviewId(iv.id)} className="px-3 py-1 bg-red-600/20 text-red-400 hover:bg-red-600/40 rounded-lg text-xs">Delete</button>
-                  </div>
+                  {/* Collapsed header — always visible */}
+                  <button
+                    className="w-full px-4 py-3 flex items-center justify-between hover:bg-white/5 transition-colors text-left"
+                    onClick={() => setExpandedInterviewId(prev => prev === iv.id ? null : iv.id)}
+                  >
+                    <div className="flex items-center gap-3">
+                      <span className="font-medium">Round {iv.round}{iv.interview_type && ` · ${iv.interview_type}`}</span>
+                      {iv.date && <span className="text-gray-500 text-xs">📅 {iv.date}</span>}
+                    </div>
+                    <span className="text-gray-500 text-lg font-light">{expandedInterviewId === iv.id ? '−' : '+'}</span>
+                  </button>
+
+                  {/* Expanded content */}
+                  {expandedInterviewId === iv.id && (
+                    <div className="px-4 pb-4 flex flex-col gap-2 border-t border-white/5">
+                      {iv.notes
+                        ? <p className="text-gray-400 mt-2 break-all whitespace-pre-wrap">{iv.notes}</p>
+                        : <p className="text-gray-600 mt-2 text-xs italic">No notes.</p>
+                      }
+                      <div className="flex gap-2 justify-end mt-1">
+                        <button onClick={() => { setEditingInterviewId(iv.id); setEditInterviewData({ round: iv.round, interview_type: iv.interview_type || '', date: iv.date || '', notes: iv.notes || '' }) }} className="px-3 py-1 bg-blue-600/20 text-blue-400 hover:bg-blue-600/40 rounded-lg text-xs">Edit</button>
+                        <button onClick={() => setConfirmDeleteInterviewId(iv.id)} className="px-3 py-1 bg-red-600/20 text-red-400 hover:bg-red-600/40 rounded-lg text-xs">Delete</button>
+                      </div>
+                    </div>
+                  )}
                 </>
               )}
             </div>
