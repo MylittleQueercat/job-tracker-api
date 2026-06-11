@@ -260,5 +260,70 @@ def weekly_summary() -> dict:
     }
 
 
+@mcp.tool()
+def analyze_rejection_patterns() -> dict:
+    """Analyze rejection patterns across all rejected job applications.
+
+    Extracts keywords from the notes field of rejected jobs and returns
+    frequency counts by category, total rejections, and notes coverage.
+    """
+    with httpx.Client() as client:
+        resp = client.get(f"{API_BASE}/jobs/", headers=_headers())
+        resp.raise_for_status()
+        jobs = resp.json()
+
+    rejected = [j for j in jobs if j.get("status") == "rejected"]
+    total = len(rejected)
+    if total == 0:
+        return {"total_rejections": 0, "keyword_frequencies": {}, "notes_coverage_pct": 0.0}
+
+    # keyword categories → list of substrings to match (case-insensitive)
+    CATEGORIES: dict[str, list[str]] = {
+        "soft_skills": ["soft skill", "interpersonnel", "relationnel", "comportement", "attitude", "savoir-être"],
+        "product_thinking": ["produit", "product", "sens produit", "product thinking", "vision produit", "priorisation"],
+        "algorithm_coding": ["algo", "algorithme", "leetcode", "coding", "structure de données", "data structure", "complexité"],
+        "communication": ["communication", "expression", "oral", "présentation", "clarity", "clarté"],
+        "experience_seniority": ["expérience", "experience", "séniorité", "seniority", "junior", "senior", "années"],
+        "culture_fit": ["culture", "fit", "valeur", "value", "équipe", "team fit"],
+        "technical_skills": ["technique", "technical", "stack", "framework", "compétence technique", "maîtrise"],
+        "language": ["anglais", "english", "langue", "language", "bilingue"],
+        "domain_knowledge": ["domaine", "domain", "secteur", "industrie", "industry", "métier"],
+        "leadership_management": ["leadership", "management", "lead", "encadrement", "pilotage"],
+    }
+
+    freq: dict[str, int] = {cat: 0 for cat in CATEGORIES}
+    jobs_with_notes = 0
+
+    with httpx.Client() as client:
+        full_rejected = []
+        for job in rejected:
+            detail_resp = client.get(f"{API_BASE}/jobs/{job['id']}", headers=_headers())
+            detail_resp.raise_for_status()
+            full_rejected.append(detail_resp.json())
+
+    for job in full_rejected:
+        all_notes_parts = [job.get("notes") or ""]
+        for iv in job.get("interviews") or []:
+            all_notes_parts.append(iv.get("notes") or "")
+        combined = " ".join(all_notes_parts).lower()
+        if not combined.strip():
+            continue
+        jobs_with_notes += 1
+        for cat, keywords in CATEGORIES.items():
+            if any(kw in combined for kw in keywords):
+                freq[cat] += 1
+
+    # drop zero-count categories and sort descending
+    keyword_frequencies = dict(
+        sorted(((k, v) for k, v in freq.items() if v > 0), key=lambda x: x[1], reverse=True)
+    )
+
+    return {
+        "total_rejections": total,
+        "keyword_frequencies": keyword_frequencies,
+        "notes_coverage_pct": round(jobs_with_notes / total * 100, 1),
+    }
+
+
 if __name__ == "__main__":
     mcp.run()
