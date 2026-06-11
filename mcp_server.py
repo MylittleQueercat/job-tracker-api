@@ -143,6 +143,19 @@ def generate_followup_email(job_id: int, language: str = "fr") -> dict:
 
 
 @mcp.tool()
+def get_job_detail(job_id: int) -> dict:
+    """Get full details of a job application, including all interview records.
+
+    Args:
+        job_id: The ID of the job to retrieve.
+    """
+    with httpx.Client() as client:
+        resp = client.get(f"{API_BASE}/jobs/{job_id}", headers=_headers())
+        resp.raise_for_status()
+        return resp.json()
+
+
+@mcp.tool()
 def add_job(
     company: str,
     position: str,
@@ -172,6 +185,79 @@ def add_job(
         )
         resp.raise_for_status()
         return resp.json()
+
+
+@mcp.tool()
+def add_interview(
+    job_id: int,
+    round: int,
+    interview_type: str = "",
+    date: str = "",
+    notes: str = "",
+) -> dict:
+    """Add an interview record to a job application.
+
+    Args:
+        job_id: The ID of the job.
+        round: Interview round number (e.g. 1, 2, 3).
+        interview_type: Type of interview, e.g. 'technical', 'HR', 'final' (optional).
+        date: Interview date in ISO format, e.g. '2026-06-20T14:00:00' (optional).
+        notes: Any notes about the interview (optional).
+    """
+    payload: dict = {"round": round}
+    if interview_type:
+        payload["interview_type"] = interview_type
+    if date:
+        payload["date"] = date
+    if notes:
+        payload["notes"] = notes
+    with httpx.Client() as client:
+        resp = client.post(
+            f"{API_BASE}/jobs/{job_id}/interviews",
+            headers={**_headers(), "Content-Type": "application/json"},
+            json=payload,
+        )
+        resp.raise_for_status()
+        return resp.json()
+
+
+@mcp.tool()
+def weekly_summary() -> dict:
+    """Return a summary of job application activity for the current week (Monday to today)."""
+    with httpx.Client() as client:
+        resp = client.get(f"{API_BASE}/jobs/", headers=_headers())
+        resp.raise_for_status()
+        jobs = resp.json()
+
+    now = datetime.now(timezone.utc)
+    week_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+    week_start = week_start.replace(day=now.day - now.weekday())  # Monday
+
+    def to_dt(s: str) -> datetime:
+        dt = datetime.fromisoformat(s.replace("Z", "+00:00"))
+        return dt if dt.tzinfo else dt.replace(tzinfo=timezone.utc)
+
+    new_this_week = sum(
+        1 for j in jobs if j.get("created_at") and to_dt(j["created_at"]) >= week_start
+    )
+    with_response = sum(
+        1 for j in jobs if j.get("status") not in ("applied", "no_response")
+    )
+    updated_this_week = sum(
+        1 for j in jobs
+        if j.get("updated_at") and to_dt(j["updated_at"]) >= week_start
+    )
+
+    return {
+        "week_start": week_start.date().isoformat(),
+        "today": now.date().isoformat(),
+        "new_applications_this_week": new_this_week,
+        "jobs_with_response": with_response,
+        "jobs_updated_this_week": updated_this_week,
+        "total_active": sum(
+            1 for j in jobs if j.get("status") not in ("rejected", "withdrew", "no_response")
+        ),
+    }
 
 
 if __name__ == "__main__":
