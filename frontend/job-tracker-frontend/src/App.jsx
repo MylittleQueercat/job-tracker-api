@@ -11,6 +11,7 @@ import { STATUSES, STATUS_LABELS, STATUS_COLORS, STATUS_CHART_COLORS, MOTIVATION
 import { parseJD, generateFollowUp, generateCompanyBrief } from './api'
 import Resources from './components/Resources'
 import Achievements from './components/Achievements'
+import Resume from './components/Resume'
 
 const API = 'https://job-tracker-8xwj.onrender.com'
 
@@ -580,6 +581,12 @@ export default function App() {
           Home 🏠
         </button>
         <button
+          onClick={() => setPage('resume')}
+          className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${page === 'resume' ? 'bg-white/10 text-white' : 'text-gray-500 hover:text-white'}`}
+        >
+          Resume 📄
+        </button>
+        <button
           onClick={() => setPage('achievements')}
           className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${page === 'achievements' ? 'bg-white/10 text-white' : 'text-gray-500 hover:text-white'}`}
         >
@@ -621,6 +628,8 @@ export default function App() {
           />
         </>
       )}
+
+      {page === 'resume' && <Resume token={token} showToast={showToast} />}
 
       {page === 'achievements' && (
         <Achievements unlockedAchievements={unlockedAchievements} />
@@ -755,6 +764,24 @@ export default function App() {
         onGenerateFollowUp={(job, lang) => handleGenerateFollowUp(job, lang || language)}
         onGenerateCompanyBrief={handleGenerateCompanyBrief}
         onShowToast={showToast}
+        onAnalyzeMatch={async (job) => {
+          try {
+            const res = await authFetch(`${API}/api/match-score`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ job_id: job.id, language, user_api_key: userApiKey || undefined }),
+            })
+            if (!res.ok) {
+              const err = await res.json()
+              showToast(err.detail || 'Match score failed')
+              return null
+            }
+            return await res.json()
+          } catch (e) {
+            showToast(e.message || 'Match score failed')
+            return null
+          }
+        }}
         parsingJD={parsingJD}
         generatingFollowup={generatingFollowup}
         generatingBrief={generatingBrief}

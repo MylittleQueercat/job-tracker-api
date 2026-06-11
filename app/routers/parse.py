@@ -102,6 +102,7 @@ Job description:
     
 # Request schema for follow-up email generation
 class FollowUpRequest(BaseModel):
+    job_id: Optional[int] = None
     company: str
     position: str
     created_at: str
@@ -116,7 +117,8 @@ class FollowUpEmail(BaseModel):
 @router.post("/generate-followup", response_model=FollowUpEmail)
 async def generate_followup_email(
     body: FollowUpRequest,
-    current_user=Depends(get_current_user)
+    current_user=Depends(get_current_user),
+    db: Session = Depends(get_db),
 ):
     days_since = int((datetime.utcnow() - datetime.fromisoformat(body.created_at.replace('Z', ''))).days)
 
@@ -151,6 +153,12 @@ Return nothing else, no markdown, just the JSON.
 
     try:
         parsed = await call_gemini(prompt, body.user_api_key or os.getenv("GEMINI_API_KEY"))
+        if body.job_id is not None:
+            from app.models.job import Job
+            job = db.query(Job).filter(Job.id == body.job_id, Job.user_id == current_user.id).first()
+            if job:
+                job.followup_email = json.dumps(parsed)
+                db.commit()
         return FollowUpEmail(**parsed)
 
     except json.JSONDecodeError:
@@ -333,6 +341,8 @@ Pas de markdown, pas d'explication, juste le JSON.
 
     try:
         parsed = await call_gemini(prompt, body.user_api_key or os.getenv("GEMINI_API_KEY"))
+        job.match_score = json.dumps(parsed)
+        db.commit()
         return MatchScoreResponse(**parsed)
 
     except json.JSONDecodeError:

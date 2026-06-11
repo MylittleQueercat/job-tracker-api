@@ -17,6 +17,8 @@ class Job(Base):
     deadline = Column(Date, nullable=True)
     notes = Column(String, nullable=True)
     company_brief = Column(String, nullable=True)
+    match_score = Column(String, nullable=True)
+    followup_email = Column(String, nullable=True)
     created_at = Column(DateTime, server_default=func.now())
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
 

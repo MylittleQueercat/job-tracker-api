@@ -68,6 +68,8 @@ class JobResponse(BaseModel):
     deadline: Optional[date_type]
     notes: Optional[str]
     company_brief: Optional[str] = None
+    match_score: Optional[str] = None
+    followup_email: Optional[str] = None
     created_at: datetime
     updated_at: datetime
     interviews: list[InterviewResponse] = []

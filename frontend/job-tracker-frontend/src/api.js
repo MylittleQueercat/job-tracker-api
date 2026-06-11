@@ -18,6 +18,7 @@ export async function generateFollowUp(authFetch, job, language, userApiKey) {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
+      job_id: job.id,
       company: job.company,
       position: job.position,
       created_at: job.created_at,

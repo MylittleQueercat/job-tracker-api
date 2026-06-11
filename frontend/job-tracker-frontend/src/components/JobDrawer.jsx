@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { STATUSES } from '../constants'
 
 // Side drawer showing full job details and interview records
@@ -14,15 +14,32 @@ export default function JobDrawer({
   confirmDeleteId, setConfirmDeleteId,
   onGenerateFollowUp,
   onGenerateCompanyBrief,
-  onShowToast
+  onShowToast,
+  onAnalyzeMatch,
 }) {
   const [followUpEmail, setFollowUpEmail] = useState(null)
+  const [followUpEmailExpanded, setFollowUpEmailExpanded] = useState(false)
   const [generatingEmail, setGeneratingEmail] = useState(false)
   const [companyBrief, setCompanyBrief] = useState(
     selectedJob?.company_brief ? JSON.parse(selectedJob.company_brief) : null
   )
   const [generatingBrief, setGeneratingBrief] = useState(false)
   const [companyBriefExpanded, setCompanyBriefExpanded] = useState(false)
+  const [matchScore, setMatchScore] = useState(
+    selectedJob?.match_score ? JSON.parse(selectedJob.match_score) : null
+  )
+  const [matchScoreExpanded, setMatchScoreExpanded] = useState(false)
+  const [analyzingMatch, setAnalyzingMatch] = useState(false)
+
+  useEffect(() => {
+    setFollowUpEmail(selectedJob?.followup_email ? JSON.parse(selectedJob.followup_email) : null)
+    setFollowUpEmailExpanded(false)
+    setCompanyBrief(selectedJob?.company_brief ? JSON.parse(selectedJob.company_brief) : null)
+    setCompanyBriefExpanded(false)
+    setMatchScore(selectedJob?.match_score ? JSON.parse(selectedJob.match_score) : null)
+    setMatchScoreExpanded(false)
+    setAnalyzingMatch(false)
+  }, [selectedJob?.id])
 
   if (!selectedJob) return null
 
@@ -107,25 +124,34 @@ export default function JobDrawer({
 		{/* Follow-up email generator */}
         <div className="rounded-xl p-4 flex flex-col gap-3" style={{ background: 'rgba(255,255,255,0.05)' }}>
           <div className="flex justify-between items-center">
-            <h3 className="text-base font-semibold">Follow-up Email</h3>
-            <div className="flex gap-2">
-              <button
-                onClick={async () => {
-                  setGeneratingEmail(true)
-                  const result = await onGenerateFollowUp(selectedJob, 'fr')
-                  if (result) setFollowUpEmail({ ...result, language: 'fr' })
-                  setGeneratingEmail(false)
-                }}
-                disabled={generatingEmail}
-                className="px-3 py-1 rounded-lg text-xs font-bold text-white disabled:opacity-40"
-                style={{ background: 'linear-gradient(90deg, #f72585, #7209b7)' }}
-              >
-                {generatingEmail ? '⏳ Generating...' : 'Generate'}
-              </button>
-            </div>
+            <button
+              onClick={() => setFollowUpEmailExpanded(prev => !prev)}
+              className="text-sm font-semibold hover:opacity-70 transition-opacity flex items-center gap-2"
+            >
+              Follow-up Email
+              <span className="text-gray-400 text-2xl font-light">{followUpEmailExpanded ? '−' : '+'}</span>
+            </button>
+            <button
+              onClick={async () => {
+                setGeneratingEmail(true)
+                const lang = followUpEmail?.language || 'fr'
+                const result = await onGenerateFollowUp(selectedJob, lang)
+                if (result) {
+                  setFollowUpEmail({ ...result, language: lang })
+                  setFollowUpEmailExpanded(true)
+                  setSelectedJob(prev => ({ ...prev, followup_email: JSON.stringify({ ...result, language: lang }) }))
+                }
+                setGeneratingEmail(false)
+              }}
+              disabled={generatingEmail}
+              className="px-3 py-1 rounded-lg text-xs font-bold text-white disabled:opacity-40"
+              style={{ background: 'linear-gradient(90deg, #f72585, #7209b7)' }}
+            >
+              {generatingEmail ? '⏳ Generating...' : followUpEmail ? 'Regenerate' : 'Generate'}
+            </button>
           </div>
 
-          {followUpEmail && (
+          {followUpEmail && followUpEmailExpanded && (
             <div className="flex flex-col gap-3">
               {/* Subject */}
               <div>
@@ -145,7 +171,11 @@ export default function JobDrawer({
                     const newLang = followUpEmail.language === 'fr' ? 'en' : 'fr'
                     setGeneratingEmail(true)
                     const result = await onGenerateFollowUp(selectedJob, newLang)
-                    if (result) setFollowUpEmail({ ...result, language: newLang })
+                    if (result) {
+                      setFollowUpEmail({ ...result, language: newLang })
+                      setFollowUpEmailExpanded(true)
+                      setSelectedJob(prev => ({ ...prev, followup_email: JSON.stringify({ ...result, language: newLang }) }))
+                    }
                     setGeneratingEmail(false)
                   }}
                   disabled={generatingEmail}
@@ -223,6 +253,104 @@ export default function JobDrawer({
               </div>
             </div>
           )}
+        </div>
+
+        {/* Match Score */}
+        <div className="rounded-xl p-4 flex flex-col gap-3" style={{ background: 'rgba(255,255,255,0.05)' }}>
+          <div className="flex justify-between items-center">
+            <button
+              onClick={() => setMatchScoreExpanded(prev => !prev)}
+              className="text-sm font-semibold hover:opacity-70 transition-opacity flex items-center gap-2"
+            >
+              Match Score
+              <span className="text-gray-400 text-2xl font-light">{matchScoreExpanded ? '−' : '+'}</span>
+            </button>
+            <button
+              onClick={async () => {
+                setAnalyzingMatch(true)
+                const result = await onAnalyzeMatch(selectedJob)
+                if (result) {
+                  setMatchScore(result)
+                  setMatchScoreExpanded(true)
+                  setSelectedJob(prev => ({ ...prev, match_score: JSON.stringify(result) }))
+                }
+                setAnalyzingMatch(false)
+              }}
+              disabled={analyzingMatch}
+              className="px-3 py-1 rounded-lg text-xs font-bold text-white disabled:opacity-40"
+              style={{ background: 'linear-gradient(90deg, #f72585, #7209b7)' }}
+            >
+              {analyzingMatch ? 'Analyzing...' : matchScore ? 'Re-analyze' : 'Analyze'}
+            </button>
+          </div>
+
+          {analyzingMatch && (
+            <p className="text-sm text-gray-400 animate-pulse">Analyzing your resume against this job…</p>
+          )}
+
+          {matchScore && matchScoreExpanded && !analyzingMatch && (() => {
+            const s = matchScore.score
+            const scoreColor = s >= 70 ? '#4ade80' : s >= 50 ? '#fbbf24' : '#f87171'
+            return (
+              <div className="flex flex-col gap-4 text-sm">
+                {/* Score */}
+                <div className="flex items-center gap-4">
+                  <span className="text-5xl font-black" style={{ color: scoreColor }}>{s}</span>
+                  <div className="flex flex-col gap-1">
+                    <span className="text-xs text-gray-500 uppercase tracking-wider">Match score</span>
+                    <div className="w-32 h-1.5 rounded-full" style={{ background: 'rgba(255,255,255,0.08)' }}>
+                      <div className="h-1.5 rounded-full transition-all" style={{ width: `${s}%`, background: scoreColor }} />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Strengths */}
+                <div>
+                  <p className="text-xs text-gray-500 mb-1.5">Strengths</p>
+                  <ul className="flex flex-col gap-1">
+                    {matchScore.strengths.map((item, i) => (
+                      <li key={i} className="text-gray-300 flex items-start gap-2">
+                        <span style={{ color: '#4ade80' }}>✓</span>{item}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+
+                {/* Weaknesses */}
+                <div>
+                  <p className="text-xs text-gray-500 mb-1.5">Gaps</p>
+                  <ul className="flex flex-col gap-1">
+                    {matchScore.weaknesses.map((item, i) => (
+                      <li key={i} className="text-gray-300 flex items-start gap-2">
+                        <span style={{ color: '#f87171' }}>✗</span>{item}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+
+                {/* ATS keywords missing */}
+                {matchScore.ats_keywords_missing?.length > 0 && (
+                  <div>
+                    <p className="text-xs text-gray-500 mb-1.5">ATS keywords missing</p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {matchScore.ats_keywords_missing.map((kw, i) => (
+                        <span key={i} className="px-2 py-0.5 rounded-full text-xs"
+                          style={{ background: 'rgba(251,191,36,0.12)', color: '#fbbf24', border: '1px solid rgba(251,191,36,0.2)' }}>
+                          {kw}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Recommendation */}
+                <div className="rounded-lg px-3 py-2.5 text-xs text-gray-300 leading-relaxed"
+                  style={{ background: 'rgba(114,9,183,0.12)', border: '1px solid rgba(114,9,183,0.25)' }}>
+                  {matchScore.recommendation}
+                </div>
+              </div>
+            )
+          })()}
         </div>
 
         {/* Interview records list */}
