@@ -249,3 +249,96 @@ Ne retourne rien d'autre, pas de markdown, juste le JSON.
         if "429" in error_msg or "quota" in error_msg.lower():
             raise HTTPException(status_code=429, detail="Daily AI quota exceeded.")
         raise HTTPException(status_code=500, detail=f"Brief generation failed: {error_msg}")
+
+
+class MatchScoreRequest(BaseModel):
+    job_id: int
+    resume_id: Optional[int] = None
+    language: str = "fr"
+    user_api_key: Optional[str] = None
+
+
+class MatchScoreResponse(BaseModel):
+    score: int
+    strengths: list[str]
+    weaknesses: list[str]
+    ats_keywords_missing: list[str]
+    recommendation: str
+
+
+@router.post("/match-score", response_model=MatchScoreResponse)
+async def match_score(
+    body: MatchScoreRequest,
+    current_user=Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    from app.models.job import Job
+    from app.models.resume import Resume
+
+    job = db.query(Job).filter(Job.id == body.job_id, Job.user_id == current_user.id).first()
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+
+    if body.resume_id is not None:
+        resume = db.query(Resume).filter(Resume.id == body.resume_id, Resume.user_id == current_user.id).first()
+        if not resume:
+            raise HTTPException(status_code=404, detail="Resume not found")
+    else:
+        resume = db.query(Resume).filter(Resume.user_id == current_user.id, Resume.is_default == True).first()
+        if not resume:
+            resume = db.query(Resume).filter(Resume.user_id == current_user.id).order_by(Resume.created_at.desc()).first()
+        if not resume:
+            raise HTTPException(status_code=404, detail="No resume found. Please upload a resume first.")
+
+    if body.language == "en":
+        prompt = f"""
+You are an ATS and recruitment expert. Analyze how well the resume matches the job description.
+
+Job: {job.position} at {job.company}
+Job description / notes:
+{(job.notes or "").strip() or "(no details available)"}
+
+Resume ({resume.name}):
+{resume.content[:4000]}
+
+Return ONLY a valid JSON object with these exact keys:
+- "score": integer 0-100 (overall match score)
+- "strengths": list of exactly 3 short strings (what matches well)
+- "weaknesses": list of exactly 2 short strings (main gaps)
+- "ats_keywords_missing": list of strings (important keywords from the job not found in the resume)
+- "recommendation": one sentence of actionable advice to improve the match
+
+No markdown, no explanation, just the JSON.
+"""
+    else:
+        prompt = f"""
+Tu es un expert en ATS et recrutement. Analyse dans quelle mesure le CV correspond à l'offre d'emploi.
+
+Poste : {job.position} chez {job.company}
+Description / notes du poste :
+{(job.notes or "").strip() or "(pas de détails disponibles)"}
+
+CV ({resume.name}) :
+{resume.content[:4000]}
+
+Retourne UNIQUEMENT un objet JSON valide avec ces clés exactes :
+- "score" : entier 0-100 (score global de correspondance)
+- "strengths" : liste de exactement 3 courtes chaînes (ce qui correspond bien)
+- "weaknesses" : liste de exactement 2 courtes chaînes (les principaux manques)
+- "ats_keywords_missing" : liste de chaînes (mots-clés importants du poste absents du CV)
+- "recommendation" : une phrase de conseil actionnable pour améliorer la correspondance
+
+Pas de markdown, pas d'explication, juste le JSON.
+"""
+
+    try:
+        parsed = await call_gemini(prompt, body.user_api_key or os.getenv("GEMINI_API_KEY"))
+        return MatchScoreResponse(**parsed)
+
+    except json.JSONDecodeError:
+        raise HTTPException(status_code=422, detail="Could not parse Gemini response as JSON")
+    except Exception as e:
+        error_msg = str(e)
+        if "429" in error_msg or "quota" in error_msg.lower():
+            raise HTTPException(status_code=429, detail="Daily AI quota exceeded.")
+        raise HTTPException(status_code=500, detail=f"Match score failed: {error_msg}")
