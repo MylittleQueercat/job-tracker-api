@@ -1,7 +1,8 @@
+import { useState } from 'react'
 import { STATUS_LABELS } from '../constants'
 // TodayFocus component — shows the 3 most important actions for today
 export default function TodayFocus({ jobs, onSelectJob, fetchInterviews }) {
-  const now = Date.now()
+  const [now] = useState(() => Date.now())
 
   // 📅 Upcoming interviews — 先算这个
   const upcomingInterviews = []

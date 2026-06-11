@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { STATUSES } from '../constants'
 
 // Side drawer showing full job details and interview records
@@ -8,10 +8,10 @@ export default function JobDrawer({
   editingId, setEditingId, editData, setEditData,
   editingInterviewId, setEditingInterviewId,
   editInterviewData, setEditInterviewData,
-  confirmDeleteInterviewId, setConfirmDeleteInterviewId,
-  onUpdateStatus, onSaveEdit, onDeleteJob,
-  onAddInterview, onUpdateInterview, onDeleteInterview,
-  confirmDeleteId, setConfirmDeleteId,
+  setConfirmDeleteInterviewId,
+  onUpdateStatus, onSaveEdit,
+  onAddInterview, onUpdateInterview,
+  setConfirmDeleteId,
   onGenerateFollowUp,
   onGenerateCompanyBrief,
   onShowToast,
@@ -31,16 +31,6 @@ export default function JobDrawer({
   )
   const [matchScoreExpanded, setMatchScoreExpanded] = useState(false)
   const [analyzingMatch, setAnalyzingMatch] = useState(false)
-
-  useEffect(() => {
-    setFollowUpEmail(selectedJob?.followup_email ? JSON.parse(selectedJob.followup_email) : null)
-    setFollowUpEmailExpanded(false)
-    setCompanyBrief(selectedJob?.company_brief ? JSON.parse(selectedJob.company_brief) : null)
-    setCompanyBriefExpanded(false)
-    setMatchScore(selectedJob?.match_score ? JSON.parse(selectedJob.match_score) : null)
-    setMatchScoreExpanded(false)
-    setAnalyzingMatch(false)
-  }, [selectedJob?.id])
 
   if (!selectedJob) return null
 

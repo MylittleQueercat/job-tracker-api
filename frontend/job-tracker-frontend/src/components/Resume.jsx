@@ -56,7 +56,9 @@ export default function Resume({ token }) {
   }
 
   useEffect(() => {
-    authFetch(`${API}/api/resumes`)
+    fetch(`${API}/api/resumes`, {
+      headers: { Authorization: token },
+    })
       .then(r => r.json())
       .then(data => { setResumes(Array.isArray(data) ? data : []); setLoading(false) })
       .catch(() => setLoading(false))

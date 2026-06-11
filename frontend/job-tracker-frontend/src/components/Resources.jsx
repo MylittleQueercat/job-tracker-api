@@ -1,3 +1,41 @@
+function ResourceCard({ name, url, tag, tagColor, desc }) {
+  return (
+    <a
+      href={url}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="flex flex-col p-5 rounded-2xl border border-white/[0.06] bg-white/[0.02] hover:bg-white/[0.04] transition-all group h-full"
+    >
+      <div className="flex items-start justify-between mb-3">
+        {tag && (
+          <span
+            className="text-[10px] px-2 py-0.5 rounded-full font-medium"
+            style={{ background: tagColor + '20', color: tagColor }}
+          >
+            {tag}
+          </span>
+        )}
+        <span className="text-gray-700 group-hover:text-gray-400 transition-colors text-xs ml-auto">↗</span>
+      </div>
+      <p className="text-lg font-bold text-white group-hover:text-[#4cc9f0] transition-colors mb-2 leading-tight">
+        {name}
+      </p>
+      <p className="text-xs text-gray-500 leading-relaxed flex-1">{desc}</p>
+    </a>
+  )
+}
+
+function ResourceSection({ title, items }) {
+  return (
+    <div className="mb-10">
+      <p className="text-xs font-bold uppercase tracking-widest text-gray-500 mb-4">{title}</p>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        {items.map(item => <ResourceCard key={item.name} {...item} />)}
+      </div>
+    </div>
+  )
+}
+
 export default function Resources() {
   const platforms = [
     { name: 'Welcome to the Jungle', url: 'https://www.welcometothejungle.com', tag: 'Most Popular', tagColor: '#f72585', desc: 'Best for startups & tech. Rich company profiles, great UI. The most popular platform in France right now.' },
@@ -29,40 +67,6 @@ export default function Resources() {
     { name: 'APEC Counseling', url: 'https://www.apec.fr/candidat/conseil-accompagnement.html', tag: 'Free', tagColor: '#4ade80', desc: "Free career counseling for cadres. They'll review your CV and coach you — no cost." },
   ]
 
-  const Card = ({ name, url, tag, tagColor, desc }) => (
-    <a
-      href={url}
-      target="_blank"
-      rel="noopener noreferrer"
-      className="flex flex-col p-5 rounded-2xl border border-white/[0.06] bg-white/[0.02] hover:bg-white/[0.04] transition-all group h-full"
-    >
-      <div className="flex items-start justify-between mb-3">
-        {tag && (
-          <span
-            className="text-[10px] px-2 py-0.5 rounded-full font-medium"
-            style={{ background: tagColor + '20', color: tagColor }}
-          >
-            {tag}
-          </span>
-        )}
-        <span className="text-gray-700 group-hover:text-gray-400 transition-colors text-xs ml-auto">↗</span>
-      </div>
-      <p className="text-lg font-bold text-white group-hover:text-[#4cc9f0] transition-colors mb-2 leading-tight">
-        {name}
-      </p>
-      <p className="text-xs text-gray-500 leading-relaxed flex-1">{desc}</p>
-    </a>
-  )
-
-  const Section = ({ title, items }) => (
-    <div className="mb-10">
-      <p className="text-xs font-bold uppercase tracking-widest text-gray-500 mb-4">{title}</p>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {items.map(p => <Card key={p.name} {...p} />)}
-      </div>
-    </div>
-  )
-
   return (
     <div className="max-w-4xl mx-auto px-4 pb-20">
 
@@ -79,10 +83,10 @@ export default function Resources() {
         </p>
       </div>
 
-      <Section title="Job Platforms" items={platforms} />
-      <Section title="Internship Specific" items={internshipPlatforms} />
-      <Section title="Free Support & Workshops" items={freeSupport} />
-      <Section title="Official Resources" items={officialResources} />
+      <ResourceSection title="Job Platforms" items={platforms} />
+      <ResourceSection title="Internship Specific" items={internshipPlatforms} />
+      <ResourceSection title="Free Support & Workshops" items={freeSupport} />
+      <ResourceSection title="Official Resources" items={officialResources} />
 
       <div className="rounded-xl p-4 border border-white/[0.03] bg-white/[0.01]">
         <p className="text-xs text-gray-600 text-center">

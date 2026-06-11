@@ -27,7 +27,7 @@ const STATUS_PRIORITY = {
 // Job list with search bar, status filters, and job cards
 export default function JobList({
   jobs, fetching, filter, setFilter,
-  onSelectJob, onUpdateStatus, onDeleteJob,
+  onSelectJob, onUpdateStatus,
   newJob, setNewJob, onAddJob, submitting,
   showForm, setShowForm, onTyping, onParseJD
 }) {

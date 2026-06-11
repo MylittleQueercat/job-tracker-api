@@ -79,13 +79,12 @@ export default function App() {
     const saved = localStorage.getItem('achievements')
     return saved ? JSON.parse(saved) : {}
   })
-  const [aiUsageCount, setAiUsageCount] = useState(() => parseInt(localStorage.getItem('aiUsageCount') || '0'))
-  const [editCounts, setEditCounts] = useState(() => {
+  const [aiUsageCount] = useState(() => parseInt(localStorage.getItem('aiUsageCount') || '0'))
+  const [editCounts] = useState(() => {
     const saved = localStorage.getItem('editCounts')
     return saved ? JSON.parse(saved) : {}
   })
-  const [lastActiveDate, setLastActiveDate] = useState(() => localStorage.getItem('lastActiveDate') || null)
-  const [newlyUnlocked, setNewlyUnlocked] = useState([])
+  const [, setNewlyUnlocked] = useState([])
   
 // ── Keyboard shortcuts ─────────────────────────────────────────────────────
   useEffect(() => {
@@ -130,6 +129,8 @@ export default function App() {
         checkAchievements(data, interviews.length)
       })
       .catch(err => { setError(err.message); setLoading(false); setFetching(false) })
+  // The request intentionally runs only when the authenticated session changes.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token])
 
   // ── Auth helpers ───────────────────────────────────────────────────────────
@@ -258,7 +259,9 @@ export default function App() {
             updated[ach.id] = new Date().toISOString()
             newlyUnlockedList.push(ach)
           }
-        } catch (e) {}
+        } catch {
+          // Ignore malformed achievement checks so one badge cannot block the rest.
+        }
       }
     })
 
@@ -619,7 +622,6 @@ export default function App() {
             filter={filter} setFilter={setFilter}
             onSelectJob={job => { setSelectedJob(job); fetchInterviews(job.id) }}
             onUpdateStatus={handleUpdateStatus}
-            onDeleteJob={handleDeleteJob}
             newJob={newJob} setNewJob={setNewJob}
             onAddJob={handleAddJob} submitting={submitting}
             showForm={showForm} setShowForm={setShowForm}
@@ -751,16 +753,17 @@ export default function App() {
 
       {/* Side drawer with job details and interview records */}
       <JobDrawer
+        key={selectedJob?.id ?? 'closed'}
         selectedJob={selectedJob} setSelectedJob={setSelectedJob}
         interviews={interviews} newInterview={newInterview} setNewInterview={setNewInterview}
         editingId={editingId} setEditingId={setEditingId}
         editData={editData} setEditData={setEditData}
         editingInterviewId={editingInterviewId} setEditingInterviewId={setEditingInterviewId}
         editInterviewData={editInterviewData} setEditInterviewData={setEditInterviewData}
-        confirmDeleteInterviewId={confirmDeleteInterviewId} setConfirmDeleteInterviewId={setConfirmDeleteInterviewId}
-        confirmDeleteId={confirmDeleteId} setConfirmDeleteId={setConfirmDeleteId}
-        onUpdateStatus={handleUpdateStatus} onSaveEdit={handleSaveEdit} onDeleteJob={handleDeleteJob}
-        onAddInterview={handleAddInterview} onUpdateInterview={handleUpdateInterview} onDeleteInterview={handleDeleteInterview}
+        setConfirmDeleteInterviewId={setConfirmDeleteInterviewId}
+        setConfirmDeleteId={setConfirmDeleteId}
+        onUpdateStatus={handleUpdateStatus} onSaveEdit={handleSaveEdit}
+        onAddInterview={handleAddInterview} onUpdateInterview={handleUpdateInterview}
         onGenerateFollowUp={(job, lang) => handleGenerateFollowUp(job, lang || language)}
         onGenerateCompanyBrief={handleGenerateCompanyBrief}
         onShowToast={showToast}
