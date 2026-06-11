@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
-
-const API = 'https://job-tracker-8xwj.onrender.com'
+import { API_URL } from '../config'
 
 async function loadPdfJs() {
   if (window.pdfjsLib) return window.pdfjsLib
@@ -56,7 +55,7 @@ export default function Resume({ token }) {
   }
 
   useEffect(() => {
-    fetch(`${API}/api/resumes`, {
+    fetch(`${API_URL}/api/resumes`, {
       headers: { Authorization: token },
     })
       .then(r => r.json())
@@ -87,7 +86,7 @@ export default function Resume({ token }) {
     if (!preview || !resumeName.trim()) return
     setUploading(true)
     try {
-      const res = await authFetch(`${API}/api/resumes`, {
+      const res = await authFetch(`${API_URL}/api/resumes`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: resumeName.trim(), content: preview.content }),
@@ -110,14 +109,14 @@ export default function Resume({ token }) {
   }
 
   async function handleSetDefault(id) {
-    const res = await authFetch(`${API}/api/resumes/${id}/default`, { method: 'PATCH' })
+    const res = await authFetch(`${API_URL}/api/resumes/${id}/default`, { method: 'PATCH' })
     if (!res.ok) return showToast('Failed to set default')
     setResumes(prev => prev.map(r => ({ ...r, is_default: r.id === id })))
     showToast('Default resume updated!')
   }
 
   async function handleDelete(id) {
-    const res = await authFetch(`${API}/api/resumes/${id}`, { method: 'DELETE' })
+    const res = await authFetch(`${API_URL}/api/resumes/${id}`, { method: 'DELETE' })
     if (!res.ok) return showToast('Delete failed')
     setResumes(prev => prev.filter(r => r.id !== id))
     setConfirmDeleteId(null)

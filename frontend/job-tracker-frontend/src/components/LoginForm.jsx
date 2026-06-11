@@ -1,6 +1,5 @@
 import { useState } from 'react'
-
-const API = 'https://job-tracker-8xwj.onrender.com'
+import { API_URL } from '../config'
 
 // Login and registration form shown when user is not authenticated
 export default function LoginForm({ onLogin }) {
@@ -11,7 +10,7 @@ export default function LoginForm({ onLogin }) {
   const [loading, setLoading] = useState(false)
 
   function handleRegister() {
-    fetch(`${API}/register`, {
+    fetch(`${API_URL}/register`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ username, password })
@@ -35,7 +34,7 @@ export default function LoginForm({ onLogin }) {
     form.append('username', username)
     form.append('password', password)
 
-    fetch(`${API}/login`, {
+    fetch(`${API_URL}/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body: form

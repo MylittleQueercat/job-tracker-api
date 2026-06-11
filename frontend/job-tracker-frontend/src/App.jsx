@@ -12,8 +12,7 @@ import { parseJD, generateFollowUp, generateCompanyBrief } from './api'
 import Resources from './components/Resources'
 import Achievements from './components/Achievements'
 import Resume from './components/Resume'
-
-const API = 'https://job-tracker-8xwj.onrender.com'
+import { API_URL } from './config'
 
 export default function App() {
   // ── Job state ──────────────────────────────────────────────────────────────
@@ -120,7 +119,7 @@ export default function App() {
   useEffect(() => {
     if (!token) return
     setFetching(true)
-    const url = `${API}/jobs/`
+    const url = `${API_URL}/jobs/`
     authFetch(url)
       .then(res => res.json())
       .then(data => {
@@ -338,7 +337,7 @@ export default function App() {
   // ── Job CRUD ───────────────────────────────────────────────────────────────
   function handleAddJob() {
     setSubmitting(true)
-    authFetch(`${API}/jobs/`, {
+    authFetch(`${API_URL}/jobs/`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(newJob)
@@ -366,7 +365,7 @@ export default function App() {
     const progressStatuses = ['phone_screen', 'technical_test', 'interview', 'final_interview']
     if (progressStatuses.includes(status)) triggerCatCelebration()
 
-    authFetch(`${API}/jobs/${id}`, {
+    authFetch(`${API_URL}/jobs/${id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ status })
@@ -383,7 +382,7 @@ export default function App() {
   }
 
   function handleDeleteJob(id) {
-    authFetch(`${API}/jobs/${id}`, { method: 'DELETE' })
+    authFetch(`${API_URL}/jobs/${id}`, { method: 'DELETE' })
       .then(() => {
         setJobs(prev => prev.filter(j => j.id !== id))
         setSelectedJob(null)
@@ -393,7 +392,7 @@ export default function App() {
   }
 
   function handleSaveEdit(id) {
-    authFetch(`${API}/jobs/${id}`, {
+    authFetch(`${API_URL}/jobs/${id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(editData)
@@ -410,14 +409,14 @@ export default function App() {
 
   // ── Interview CRUD ─────────────────────────────────────────────────────────
   function fetchInterviews(jobId) {
-    authFetch(`${API}/jobs/${jobId}/interviews`)
+    authFetch(`${API_URL}/jobs/${jobId}/interviews`)
       .then(res => res.json())
       .then(data => setInterviews(Array.isArray(data) ? data : []))
       .catch(err => setError(err.message))
   }
 
   function handleAddInterview(jobId) {
-    authFetch(`${API}/jobs/${jobId}/interviews`, {
+    authFetch(`${API_URL}/jobs/${jobId}/interviews`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ ...newInterview, round: parseInt(newInterview.round), date: newInterview.date || null })
@@ -433,13 +432,13 @@ export default function App() {
   }
 
   function handleDeleteInterview(jobId, interviewId) {
-    authFetch(`${API}/jobs/${jobId}/interviews/${interviewId}`, { method: 'DELETE' })
+    authFetch(`${API_URL}/jobs/${jobId}/interviews/${interviewId}`, { method: 'DELETE' })
       .then(() => { setInterviews(prev => prev.filter(iv => iv.id !== interviewId)); showToast('Interview deleted!') })
       .catch(err => setError(err.message))
   }
 
   function handleUpdateInterview(jobId, interviewId, data) {
-    authFetch(`${API}/jobs/${jobId}/interviews/${interviewId}`, {
+    authFetch(`${API_URL}/jobs/${jobId}/interviews/${interviewId}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data)
@@ -769,7 +768,7 @@ export default function App() {
         onShowToast={showToast}
         onAnalyzeMatch={async (job) => {
           try {
-            const res = await authFetch(`${API}/api/match-score`, {
+            const res = await authFetch(`${API_URL}/api/match-score`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ job_id: job.id, language, user_api_key: userApiKey || undefined }),

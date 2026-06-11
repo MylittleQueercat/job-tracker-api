@@ -1,7 +1,7 @@
-const API = 'https://job-tracker-8xwj.onrender.com'
+import { API_URL } from './config'
 
 export async function parseJD(authFetch, text, userApiKey) {
-  const res = await authFetch(`${API}/api/parse-jd`, {
+  const res = await authFetch(`${API_URL}/api/parse-jd`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ text, user_api_key: userApiKey || null })
@@ -14,7 +14,7 @@ export async function parseJD(authFetch, text, userApiKey) {
 }
 
 export async function generateFollowUp(authFetch, job, language, userApiKey) {
-  const res = await authFetch(`${API}/api/generate-followup`, {
+  const res = await authFetch(`${API_URL}/api/generate-followup`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -34,7 +34,7 @@ export async function generateFollowUp(authFetch, job, language, userApiKey) {
 }
 
 export async function generateCompanyBrief(authFetch, job, language, userApiKey) {
-  const res = await authFetch(`${API}/api/company-brief`, {
+  const res = await authFetch(`${API_URL}/api/company-brief`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
