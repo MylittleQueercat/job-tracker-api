@@ -1,3 +1,4 @@
+import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.database import Base, engine
@@ -27,3 +28,11 @@ app.include_router(resumes.router, prefix="/api", tags=["Resumes"])
 @app.get("/")
 def root():
     return {"message": "Job Tracker API is running"}
+
+@app.get("/debug/langfuse")
+def debug_langfuse():
+    return {
+        "LANGFUSE_PUBLIC_KEY": bool(os.getenv("LANGFUSE_PUBLIC_KEY")),
+        "LANGFUSE_SECRET_KEY": bool(os.getenv("LANGFUSE_SECRET_KEY")),
+        "LANGFUSE_HOST": bool(os.getenv("LANGFUSE_HOST")),
+    }
