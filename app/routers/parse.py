@@ -77,6 +77,7 @@ async def call_gemini(prompt: str, api_key: str) -> dict:
                 end_time=end_time,
                 metadata={"latency_ms": round(latency_ms)},
             )
+            _langfuse.flush()
     except Exception:
         pass
 
