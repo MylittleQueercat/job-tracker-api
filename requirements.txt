@@ -9,4 +9,4 @@ python-multipart
 python-dotenv
 pytest
 httpx
-google-genai
+google-genailangfuse

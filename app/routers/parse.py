@@ -1,7 +1,8 @@
 import os
 import json
 import asyncio
-from datetime import datetime
+import time
+from datetime import datetime, timezone
 from google import genai
 from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
@@ -10,6 +11,17 @@ from app.routers.jobs import get_current_user
 from app.database import get_db
 from sqlalchemy.orm import Session
 import re
+
+_langfuse = None
+try:
+    from langfuse import Langfuse
+    _langfuse = Langfuse(
+        public_key=os.getenv("LANGFUSE_PUBLIC_KEY"),
+        secret_key=os.getenv("LANGFUSE_SECRET_KEY"),
+        host=os.getenv("LANGFUSE_HOST"),
+    )
+except Exception:
+    pass
 
 def extract_json(text: str) -> dict:
     """Robustly extract JSON from Gemini response"""
@@ -34,11 +46,14 @@ def extract_json(text: str) -> dict:
     raise json.JSONDecodeError("No JSON found", text, 0)
 
 async def call_gemini(prompt: str, api_key: str) -> dict:
+    model_name = "gemini-2.5-flash-lite"
     client = genai.Client(api_key=api_key)
+    start_time = datetime.now(timezone.utc)
+    t0 = time.perf_counter()
     for attempt in range(2):
         try:
             response = client.models.generate_content(
-                model="gemini-2.5-flash-lite",
+                model=model_name,
                 contents=prompt
             )
             break
@@ -47,6 +62,24 @@ async def call_gemini(prompt: str, api_key: str) -> dict:
                 await asyncio.sleep(2)
             else:
                 raise
+    end_time = datetime.now(timezone.utc)
+    latency_ms = (time.perf_counter() - t0) * 1000
+
+    try:
+        if _langfuse:
+            trace = _langfuse.trace(name="call_gemini")
+            trace.generation(
+                name="gemini-generate",
+                model=model_name,
+                input=prompt,
+                output=response.text,
+                start_time=start_time,
+                end_time=end_time,
+                metadata={"latency_ms": round(latency_ms)},
+            )
+    except Exception:
+        pass
+
     return extract_json(response.text)
 
 router = APIRouter()
