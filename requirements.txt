@@ -11,4 +11,3 @@ pytest
 httpx
 google-genai
 langfuse
-EOF
